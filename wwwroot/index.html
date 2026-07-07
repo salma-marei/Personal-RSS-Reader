@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feed Reader</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">🌱</span>
+        <span class="brand-name">Feed Reader</span>
+      </div>
+
+      <form id="add-feed-form" class="add-form">
+        <input id="feed-url" type="url" placeholder="Add feed URL…" required>
+        <button type="submit" class="add-btn" id="add-submit">Add</button>
+      </form>
+      <p id="add-error" class="add-error" hidden></p>
+
+      <nav class="feed-nav" id="feed-nav"></nav>
+
+      <button id="refresh-all" class="refresh-all">⟳ Refresh all</button>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <h1 class="view-title"><span id="view-name">All Feeds</span> <span class="view-count" id="view-count"></span></h1>
+        <div class="header-controls">
+          <div class="search">
+            <span class="search-icon">🔍</span>
+            <input id="search" type="search" placeholder="Search">
+          </div>
+          <button id="group-toggle" class="ctl-btn" title="Group articles by feed">⊞ Group</button>
+          <button id="theme-toggle" class="ctl-btn" title="Toggle dark mode">☾</button>
+        </div>
+      </header>
+
+      <section class="cards" id="cards">
+        <p class="state">Loading…</p>
+      </section>
+
+      <div class="pagination" id="pagination" hidden>
+        <div class="page-buttons">
+          <button class="page-btn" id="prev">‹ Prev</button>
+          <button class="page-btn" id="next">Next ›</button>
+        </div>
+        <span class="page-info" id="page-info"></span>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+      <div class="modal-content" id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

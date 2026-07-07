@@ -1,0 +1,10 @@
+# Build output
+bin/
+obj/
+
+# Runtime data (feed subscriptions are created at runtime)
+Data/
+
+# IDE / user-specific
+.vs/
+*.user
