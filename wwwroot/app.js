@@ -20,8 +20,6 @@ const state = {
   fields: { source: true, date: true, author: false, excerpt: true },
   sort: 'newest',
   pageSize: 10,
-  grouped: false,
-  expanded: new Set(), // groups the user has opened (default: all collapsed)
   theme: 'light',
   seen: new Set(),      // keys of articles we've already shown
   newKeys: new Set(),   // keys highlighted as NEW after a refresh
@@ -180,12 +178,6 @@ function navItem(key, label, count, feed) {
   item.addEventListener('click', () => {
     state.selected = key;
     state.page = 1;
-    // Grouping a single feed is pointless — drop back to the flat list.
-    if (key !== 'all' && state.grouped) {
-      state.grouped = false;
-      document.getElementById('group-toggle').classList.remove('active');
-      try { localStorage.setItem('rss-grouped', '0'); } catch { /* ignore */ }
-    }
     renderSidebar();
     renderCards();
   });
@@ -219,9 +211,6 @@ function renderCards() {
   const feed = state.selected === 'all' ? null : feedByUrl(state.selected);
   document.getElementById('view-name').textContent = feed ? feed.name : 'All Feeds';
 
-  // Grouping only makes sense across all feeds — disable it when viewing one.
-  document.getElementById('group-toggle').disabled = state.selected !== 'all';
-
   const list = filteredArticles();
   const total = list.length;
   document.getElementById('view-count').textContent = '(' + total + ')';
@@ -240,12 +229,6 @@ function renderCards() {
     return;
   }
 
-  if (state.grouped) {
-    renderGrouped(list);
-    renderPagination(0);
-    return;
-  }
-
   const pages = Math.max(1, Math.ceil(total / state.pageSize));
   if (state.page > pages) state.page = pages;
   const start = (state.page - 1) * state.pageSize;
@@ -255,58 +238,10 @@ function renderCards() {
   renderPagination(total);
 }
 
-function renderGrouped(list) {
-  const cards = document.getElementById('cards');
-
-  const groups = new Map();
-  for (const a of list) {
-    if (!groups.has(a.sourceFeedUrl)) groups.set(a.sourceFeedUrl, []);
-    groups.get(a.sourceFeedUrl).push(a);
-  }
-
-  // order groups by the sidebar feed order
-  const ordered = state.feeds.map(f => f.url).filter(u => groups.has(u));
-  for (const u of groups.keys()) if (!ordered.includes(u)) ordered.push(u);
-
-  for (const url of ordered) {
-    const items = groups.get(url);
-    const feed = feedByUrl(url);
-    const name = feed ? feed.name : (items[0].sourceFeedName || url);
-    const collapsed = !state.expanded.has(url);
-
-    const group = document.createElement('div');
-    group.className = 'feed-group' + (collapsed ? ' collapsed' : '');
-
-    const header = document.createElement('div');
-    header.className = 'group-header';
-    const caret = document.createElement('span');
-    caret.className = 'group-caret';
-    caret.textContent = collapsed ? '▶' : '▼';
-    const gname = document.createElement('span');
-    gname.textContent = name;
-    const gcount = document.createElement('span');
-    gcount.className = 'group-count';
-    gcount.textContent = '(' + items.length + ')';
-    header.append(caret, gname, gcount);
-    header.addEventListener('click', () => {
-      if (state.expanded.has(url)) state.expanded.delete(url);
-      else state.expanded.add(url);
-      renderCards();
-    });
-
-    const body = document.createElement('div');
-    body.className = 'group-body';
-    for (const a of items) body.appendChild(renderCard(a, true)); // hide redundant source
-
-    group.append(header, body);
-    cards.appendChild(group);
-  }
-}
-
 function renderPagination(total) {
   const pag = document.getElementById('pagination');
   const pages = Math.max(1, Math.ceil(total / state.pageSize));
-  if (total === 0 || state.grouped || pages <= 1) { pag.hidden = true; return; }
+  if (total === 0 || pages <= 1) { pag.hidden = true; return; }
   if (state.page > pages) state.page = pages;
   pag.hidden = false;
   document.getElementById('page-info').textContent = 'Page ' + state.page + ' of ' + pages;
@@ -314,13 +249,13 @@ function renderPagination(total) {
   document.getElementById('next').disabled = state.page >= pages;
 }
 
-function renderCard(a, hideSource) {
+function renderCard(a) {
   const card = document.createElement('article');
   card.className = 'card';
   const isNew = state.newKeys.has(keyOf(a));
   if (isNew) card.classList.add('new');
 
-  const showSource = !hideSource && state.fields.source && a.sourceFeedName;
+  const showSource = state.fields.source && a.sourceFeedName;
   const showDate = state.fields.date && a.publishedAt;
   if (showSource || showDate) {
     const head = document.createElement('div');
@@ -484,14 +419,6 @@ document.getElementById('search').addEventListener('input', (e) => {
   renderCards();
 });
 
-document.getElementById('group-toggle').addEventListener('click', (e) => {
-  state.grouped = !state.grouped;
-  if (state.grouped) state.expanded.clear(); // start fully collapsed each time
-  e.currentTarget.classList.toggle('active', state.grouped);
-  try { localStorage.setItem('rss-grouped', state.grouped ? '1' : '0'); } catch { /* ignore */ }
-  renderCards();
-});
-
 document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
@@ -516,9 +443,6 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
   let theme = 'light';
   try { theme = localStorage.getItem('rss-theme') || 'light'; } catch { /* ignore */ }
   applyTheme(theme);
-
-  try { state.grouped = localStorage.getItem('rss-grouped') === '1'; } catch { /* ignore */ }
-  document.getElementById('group-toggle').classList.toggle('active', state.grouped);
 
   loadAll();
 })();
