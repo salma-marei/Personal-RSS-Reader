@@ -17,10 +17,8 @@ const state = {
   selected: 'all',
   feedsCollapsed: false,
   search: '',
-  page: 1,
   fields: { source: true, date: true, author: false, excerpt: true },
   sort: 'newest',
-  pageSize: 10,
   theme: 'light',
   seen: new Set(),      // keys of articles we've already shown
   newKeys: new Set(),   // keys highlighted as NEW after a refresh
@@ -81,7 +79,6 @@ function renderSkeleton(n) {
   n = n || 6;
   const cards = document.getElementById('cards');
   cards.innerHTML = '';
-  document.getElementById('pagination').hidden = true;
   for (let i = 0; i < n; i++) {
     const c = document.createElement('article');
     c.className = 'card skeleton';
@@ -187,7 +184,6 @@ function navItem(key, label, count, feed) {
   item.append(name, meta);
   item.addEventListener('click', () => {
     state.selected = key;
-    state.page = 1;
     renderSidebar();
     renderCards();
   });
@@ -230,33 +226,14 @@ function renderCards() {
 
   if (state.feeds.length === 0) {
     cards.innerHTML = '<p class="state">No feeds yet. Add one from the sidebar to get started.</p>';
-    renderPagination(0);
     return;
   }
   if (total === 0) {
     cards.innerHTML = '<p class="state">No articles' + (state.search ? ' match your search.' : ' yet. Try “Refresh all”.') + '</p>';
-    renderPagination(0);
     return;
   }
 
-  const pages = Math.max(1, Math.ceil(total / state.pageSize));
-  if (state.page > pages) state.page = pages;
-  const start = (state.page - 1) * state.pageSize;
-  const pageItems = list.slice(start, start + state.pageSize);
-
-  for (const a of pageItems) cards.appendChild(renderCard(a));
-  renderPagination(total);
-}
-
-function renderPagination(total) {
-  const pag = document.getElementById('pagination');
-  const pages = Math.max(1, Math.ceil(total / state.pageSize));
-  if (total === 0 || pages <= 1) { pag.hidden = true; return; }
-  if (state.page > pages) state.page = pages;
-  pag.hidden = false;
-  document.getElementById('page-info').textContent = 'Page ' + state.page + ' of ' + pages;
-  document.getElementById('prev').disabled = state.page <= 1;
-  document.getElementById('next').disabled = state.page >= pages;
+  for (const a of list) cards.appendChild(renderCard(a));
 }
 
 function renderCard(a) {
@@ -430,24 +407,12 @@ document.getElementById('feed-toggle').addEventListener('click', () => {
 
 document.getElementById('search').addEventListener('input', (e) => {
   state.search = e.target.value;
-  state.page = 1;
   renderCards();
 });
 
 document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
-
-document.getElementById('prev').addEventListener('click', () => {
-  if (state.page > 1) { state.page--; renderCards(); scrollToTop(); }
-});
-document.getElementById('next').addEventListener('click', () => {
-  state.page++; renderCards(); scrollToTop();
-});
-function scrollToTop() {
-  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-backdrop').addEventListener('click', closeModal);

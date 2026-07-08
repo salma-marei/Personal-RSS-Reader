@@ -314,30 +314,6 @@ body {
 
 .state { color: var(--muted); padding: 40px 4px; }
 
-/* ---------- Pagination ---------- */
-.pagination {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: 24px;
-}
-.pagination[hidden] { display: none; }
-.page-buttons { display: flex; align-items: center; gap: 12px; }
-.page-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 14px;
-  font-size: 0.88rem;
-  color: var(--text);
-  cursor: pointer;
-}
-.page-btn:hover:not(:disabled) { border-color: #b9c0cc; }
-.page-btn:disabled { opacity: 0.4; filter: blur(0.7px); cursor: default; }
-
-.page-info { font-size: 0.85rem; color: var(--muted); }
-
 /* ---------- Reading modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
 .modal[hidden] { display: none; }
