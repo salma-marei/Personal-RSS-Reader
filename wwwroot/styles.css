@@ -2,8 +2,8 @@
   --sidebar-bg: #1e2b3d;
   --sidebar-text: #cbd5e1;
   --sidebar-muted: #7e8ba0;
-  --gold: #c9a24b;
-  --gold-hover: #b8923f;
+  --gold: #f3d78b;
+  --gold-hover: #ffe2a3;
   --main-bg: #eceef0;
   --card-bg: #ffffff;
   --text: #1f2733;
@@ -25,6 +25,7 @@
 
 * { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -51,7 +52,7 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   padding: 4px 6px 20px;
 }
 .brand-mark { font-size: 1.15rem; }
@@ -93,7 +94,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0;
   margin-top: 20px;
   padding: 8px 6px;
   background: transparent;
@@ -314,6 +315,72 @@ body {
 
 .state { color: var(--muted); padding: 40px 4px; }
 
+/* ---------- Scroll to top ---------- */
+.scroll-top {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  transform: translateY(10px);
+  background: #1a2436;
+  border: 1px solid rgba(243, 215, 139, 0.22);
+  border-radius: 999px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  color: var(--gold);
+  cursor: pointer;
+  gap: 8px;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+  visibility: hidden;
+  white-space: nowrap;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out, width 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+.scroll-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+}
+.scroll-top-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.scroll-top-label {
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  position: absolute;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease-in-out;
+}
+@media (hover: hover) {
+  .scroll-top.visible:hover {
+    transform: translateY(-2px);
+    background: #243149;
+    border-color: rgba(243, 215, 139, 0.5);
+    color: var(--gold-hover);
+    gap: 8px;
+    width: 172px;
+  }
+  .scroll-top.visible:hover .scroll-top-label {
+    position: static;
+    width: auto;
+    opacity: 1;
+  }
+}
+
 /* ---------- Reading modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
 .modal[hidden] { display: none; }
@@ -367,4 +434,10 @@ body {
   .main-header { flex-direction: column; align-items: flex-start; }
   .search { width: 100%; }
   .toolbar { flex-direction: column; align-items: flex-start; }
+  .scroll-top {
+    right: 24px;
+    bottom: 24px;
+    width: 44px;
+    height: 44px;
+  }
 }

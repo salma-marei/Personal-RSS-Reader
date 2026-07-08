@@ -364,6 +364,16 @@ function openModal(a) {
 }
 function closeModal() { document.getElementById('modal').hidden = true; }
 
+// ---------- scroll to top ----------
+function updateScrollTopButton() {
+  const btn = document.getElementById('scroll-top');
+  if (!btn) return;
+  const visible = window.scrollY > 300;
+  btn.hidden = false;
+  btn.setAttribute('aria-hidden', String(!visible));
+  btn.classList.toggle('visible', visible);
+}
+
 // ---------- events ----------
 document.getElementById('add-feed-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -414,6 +424,12 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
 
+document.getElementById('scroll-top').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+window.addEventListener('scroll', updateScrollTopButton, { passive: true });
+
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-backdrop').addEventListener('click', closeModal);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
@@ -423,6 +439,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
   let theme = 'light';
   try { theme = localStorage.getItem('rss-theme') || 'light'; } catch { /* ignore */ }
   applyTheme(theme);
+  updateScrollTopButton();
 
   loadAll();
 })();
