@@ -15,6 +15,7 @@ const state = {
   feeds: [],
   articles: [],
   selected: 'all',
+  feedsCollapsed: false,
   search: '',
   page: 1,
   fields: { source: true, date: true, author: false, excerpt: true },
@@ -121,6 +122,15 @@ async function reloadArticles() {
 // ---------- sidebar ----------
 function renderSidebar() {
   const nav = document.getElementById('feed-nav');
+  const toggle = document.getElementById('feed-toggle');
+  const label = document.getElementById('feed-toggle-label');
+  const icon = document.getElementById('feed-toggle-icon');
+
+  label.textContent = 'Feeds (' + state.feeds.length + ')';
+  icon.textContent = state.feedsCollapsed ? '+' : '-';
+  toggle.setAttribute('aria-expanded', String(!state.feedsCollapsed));
+  nav.classList.toggle('collapsed', state.feedsCollapsed);
+
   nav.innerHTML = '';
   nav.appendChild(navItem('all', 'All Feeds', state.articles.length, null));
   for (const feed of state.feeds) {
@@ -411,6 +421,11 @@ document.getElementById('refresh-all').addEventListener('click', async (e) => {
   await reloadArticles();
   btn.textContent = '⟳ Refresh all';
   btn.disabled = false;
+});
+
+document.getElementById('feed-toggle').addEventListener('click', () => {
+  state.feedsCollapsed = !state.feedsCollapsed;
+  renderSidebar();
 });
 
 document.getElementById('search').addEventListener('input', (e) => {
