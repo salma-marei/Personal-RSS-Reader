@@ -132,9 +132,9 @@ function localizeFeedError(message) {
   if (message.startsWith('Not a valid RSS/Atom feed:')) return t('invalidFeed');
   return message || t('couldNotAddFeed');
 }
-function countFor(url) { return state.articles.filter(a => a.sourceFeedUrl === url).length; }
-function feedByUrl(url) { return state.feeds.find(f => f.url === url); }
-function keyOf(a) { return a.link || ((a.sourceFeedUrl || '') + '|' + (a.title || '')); }
+function countFor(feedId) { return state.articles.filter(a => a.sourceFeedId === feedId).length; }
+function feedById(feedId) { return state.feeds.find(f => f.id === feedId); }
+function keyOf(a) { return a.link || ((a.sourceFeedId || a.sourceFeedUrl || '') + '|' + (a.title || '')); }
 
 // Flag articles we haven't seen before as NEW (skipped on the very first load).
 function markNew(articles) {
@@ -245,7 +245,7 @@ async function loadAll() {
   const riverP = api.river().catch(() => []);
 
   state.feeds = (await feedsP) || [];
-  if (state.selected !== 'all' && !feedByUrl(state.selected)) state.selected = 'all';
+  if (state.selected !== 'all' && !feedById(state.selected)) state.selected = 'all';
   renderSidebar();
 
   state.articles = (await riverP) || [];
@@ -276,7 +276,7 @@ function renderSidebar() {
   nav.innerHTML = '';
   nav.appendChild(navItem('all', t('allFeeds'), state.articles.length, null));
   for (const feed of state.feeds) {
-    nav.appendChild(navItem(feed.url, feed.name, countFor(feed.url), feed));
+    nav.appendChild(navItem(feed.id, feed.name, countFor(feed.id), feed));
   }
 }
 
@@ -316,7 +316,7 @@ function navItem(key, label, count, feed) {
       e.stopPropagation();
       if (!confirm(t('removeFeedConfirm').replace('{name}', feed.name))) return;
       await api.deleteFeed(feed.id);
-      if (state.selected === feed.url) state.selected = 'all';
+      if (state.selected === feed.id) state.selected = 'all';
       await loadAll();
     });
     meta.appendChild(del);
@@ -341,7 +341,7 @@ function navItem(key, label, count, feed) {
 function filteredArticles() {
   let list = state.selected === 'all'
     ? state.articles
-    : state.articles.filter(a => a.sourceFeedUrl === state.selected);
+    : state.articles.filter(a => a.sourceFeedId === state.selected);
 
   const q = state.search.trim().toLowerCase();
   if (q) {
@@ -361,7 +361,7 @@ function filteredArticles() {
 
 // ---------- rendering ----------
 function renderCards() {
-  const feed = state.selected === 'all' ? null : feedByUrl(state.selected);
+  const feed = state.selected === 'all' ? null : feedById(state.selected);
   const header = document.querySelector('.main-header');
   const viewName = document.getElementById('view-name');
   const isRtlFeed = Boolean(feed && hasRtlText(feed.name));
@@ -399,6 +399,12 @@ function renderCards() {
 function renderCard(a) {
   const card = document.createElement('article');
   card.className = 'card';
+  const cardMain = document.createElement('div');
+  cardMain.className = 'card-main';
+  const isRtlArticle = hasRtlText(a.title || a.sourceFeedName || a.summary);
+  cardMain.classList.add(isRtlArticle ? 'rtl-card' : 'ltr-card');
+  const cardText = document.createElement('div');
+  cardText.className = 'card-text';
   const isNew = state.newKeys.has(keyOf(a));
   if (isNew) card.classList.add('new');
 
@@ -429,7 +435,7 @@ function renderCard(a) {
       t.title = fmtAbsolute(a.publishedAt);
       head.appendChild(t);
     }
-    card.appendChild(head);
+    cardText.appendChild(head);
   }
 
   const title = document.createElement('h3');
@@ -443,13 +449,13 @@ function renderCard(a) {
     title.appendChild(badge);
   }
   title.addEventListener('click', () => openArticle(a));
-  card.appendChild(title);
+  cardText.appendChild(title);
 
   if (state.fields.author && a.author) {
     const author = document.createElement('div');
     author.className = 'card-author';
     author.textContent = t('by') + ' ' + a.author;
-    card.appendChild(author);
+    cardText.appendChild(author);
   }
 
   if (state.fields.excerpt && a.summary) {
@@ -457,7 +463,7 @@ function renderCard(a) {
     excerpt.className = 'card-excerpt';
     excerpt.dir = 'auto';
     excerpt.textContent = a.summary;
-    card.appendChild(excerpt);
+    cardText.appendChild(excerpt);
   }
 
   const actions = document.createElement('div');
@@ -468,7 +474,22 @@ function renderCard(a) {
   expand.textContent = '↗';
   expand.addEventListener('click', () => openArticle(a));
   actions.appendChild(expand);
-  card.appendChild(actions);
+  cardText.appendChild(actions);
+
+  const imageUrl = safeHref(a.imageUrl);
+  if (imageUrl) {
+    const image = document.createElement('img');
+    image.className = 'card-image';
+    image.src = imageUrl;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+    image.addEventListener('error', () => image.remove());
+    cardMain.appendChild(image);
+  }
+  cardMain.appendChild(cardText);
+  card.appendChild(cardMain);
 
   return card;
 }

@@ -8,6 +8,8 @@ public class Article
     public string? Author { get; set; }
     public string? ContentHtml { get; set; }
     public string? Summary { get; set; }
+    public string? ImageUrl { get; set; }
+    public Guid SourceFeedId { get; set; }
     public string SourceFeedName { get; set; } = "";
     public string SourceFeedUrl { get; set; } = "";
 }

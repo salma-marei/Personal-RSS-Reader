@@ -293,6 +293,22 @@ body {
   padding: 18px 22px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
+.card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.card-main.ltr-card { direction: ltr; }
+.card-main.rtl-card { direction: rtl; }
+.card-text { flex: 1 1 auto; min-width: 0; }
+.card-image {
+  flex: 0 0 208px;
+  width: 208px;
+  height: 136px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--main-bg);
+}
 .card.new { animation: fadein 0.5s ease; }
 @keyframes fadein {
   from { opacity: 0; transform: translateY(-6px); }
@@ -498,6 +514,8 @@ body {
   .main-header { flex-direction: column; align-items: flex-start; }
   .search { width: 100%; }
   .toolbar { flex-direction: column; align-items: flex-start; }
+  .card-main { gap: 14px; }
+  .card-image { flex-basis: 128px; width: 128px; height: 88px; }
   .scroll-top {
     inset-inline-end: 24px;
     bottom: 24px;
