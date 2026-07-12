@@ -63,6 +63,10 @@ body {
   text-transform: uppercase;
   color: #eef1f5;
 }
+:root[dir="rtl"] .brand-name {
+  letter-spacing: 0;
+  text-transform: none;
+}
 
 .add-form { display: flex; gap: 8px; }
 .add-form input {
@@ -119,10 +123,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  direction: ltr;
   gap: 8px;
   padding: 10px 12px;
   border-radius: 6px;
-  border-left: 3px solid transparent;
+  border-inline-start: 3px solid transparent;
   cursor: pointer;
   color: var(--sidebar-text);
   font-size: 0.92rem;
@@ -130,11 +135,24 @@ body {
 .nav-item:hover { background: rgba(255, 255, 255, 0.05); }
 .nav-item.active {
   background: rgba(255, 255, 255, 0.07);
-  border-left-color: var(--gold);
+  border-inline-start-color: var(--gold);
   color: #fff;
 }
-.nav-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .nav-meta { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.nav-item.rtl-feed { flex-direction: row-reverse; }
+.nav-item.rtl-feed.active {
+  border-inline-start-color: transparent;
+  border-inline-end: 3px solid var(--gold);
+}
+.nav-item.rtl-feed .nav-meta { flex-direction: row-reverse; }
 .nav-badge {
   background: rgba(255, 255, 255, 0.12);
   color: var(--sidebar-text);
@@ -180,7 +198,34 @@ body {
   gap: 16px;
   margin-bottom: 18px;
 }
+.main-header.rtl-feed-view {
+  direction: rtl;
+  flex-direction: row;
+}
+.main-header.ltr-feed-view {
+  direction: ltr;
+  flex-direction: row;
+}
 .view-title { font-size: 1.5rem; font-weight: 600; margin: 0; }
+:root[dir="rtl"] .view-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  text-align: right;
+}
+.main-header.ltr-feed-view .view-title {
+  direction: ltr;
+  flex-direction: row;
+  text-align: left;
+}
+.main-header.rtl-feed-view .view-title {
+  direction: rtl;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  text-align: right;
+}
 .view-count { color: var(--muted); font-weight: 400; }
 
 .header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -257,23 +302,40 @@ body {
   display: inline-block;
   background: var(--gold);
   color: #1e2b3d;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 2px 6px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  padding: 3px 7px;
   border-radius: 4px;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   vertical-align: middle;
 }
 
 .card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   font-family: var(--serif);
   font-style: italic;
   font-size: 0.82rem;
   color: var(--muted);
   margin-bottom: 6px;
 }
-.card-source { color: #55606e; }
+.card-head.rtl-meta {
+  direction: rtl;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: right;
+}
+.card-head.ltr-meta {
+  direction: ltr;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+}
+.card-source { color: #55606e; unicode-bidi: isolate; }
 .card-title {
   font-family: var(--serif);
   font-size: 1.2rem;
@@ -282,6 +344,7 @@ body {
   margin: 0 0 6px;
   color: var(--text);
   cursor: pointer;
+  text-align: start;
 }
 .card-title:hover { color: #000; }
 .card-author { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
@@ -290,6 +353,7 @@ body {
   line-height: 1.55;
   color: var(--excerpt);
   margin: 0;
+  text-align: start;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -318,7 +382,7 @@ body {
 /* ---------- Scroll to top ---------- */
 .scroll-top {
   position: fixed;
-  right: 32px;
+  inset-inline-end: 32px;
   bottom: 32px;
   z-index: 45;
   display: flex;
@@ -399,7 +463,7 @@ body {
 .modal-close {
   position: absolute;
   top: 14px;
-  right: 16px;
+  inset-inline-end: 16px;
   background: none;
   border: none;
   font-size: 1.1rem;
@@ -435,7 +499,7 @@ body {
   .search { width: 100%; }
   .toolbar { flex-direction: column; align-items: flex-start; }
   .scroll-top {
-    right: 24px;
+    inset-inline-end: 24px;
     bottom: 24px;
     width: 44px;
     height: 44px;

@@ -11,6 +11,75 @@ const api = {
   river: () => fetch('/river').then(r => r.json()),
 };
 
+const i18n = {
+  en: {
+    add: 'Add',
+    addFeedUrl: 'Add feed URL...',
+    allFeeds: 'All Feeds',
+    backToTop: 'Head to the top!',
+    by: 'by',
+    close: 'Close',
+    couldNotAddFeed: 'Could not add feed.',
+    feeds: 'Feeds',
+    justNow: 'just now',
+    langToggle: 'ع',
+    loading: 'Loading...',
+    new: 'NEW',
+    noArticlesMatch: 'No articles match your search.',
+    noArticlesYet: 'No articles yet. Try "Refresh all".',
+    noFeeds: 'No feeds yet. Add one from the sidebar to get started.',
+    duplicateFeed: 'This feed is already in your subscriptions.',
+    invalidFeed: 'Not a valid RSS/Atom feed.',
+    openFullArticle: 'Open full article at source',
+    readFullArticle: 'Read full article',
+    refreshAll: 'Refresh all',
+    refreshFeed: 'Refresh feed',
+    refreshing: 'Refreshing...',
+    removeFeed: 'Remove feed',
+    removeFeedConfirm: 'Remove "{name}"?',
+    search: 'Search',
+    switchLanguage: 'Switch language',
+    themeDark: 'Switch to dark mode',
+    themeLight: 'Switch to light mode',
+    untitled: '(untitled)',
+    urlRequired: 'URL is required.',
+    units: { m: 'm ago', h: 'h ago', d: 'd ago', mo: 'mo ago', y: 'y ago' },
+  },
+  ar: {
+    add: 'إضافة',
+    addFeedUrl: 'أضف رابط الخلاصة...',
+    allFeeds: 'كل الخلاصات',
+    backToTop: 'العودة للأعلى',
+    by: 'بواسطة',
+    close: 'إغلاق',
+    couldNotAddFeed: 'تعذر إضافة الخلاصة.',
+    feeds: 'الخلاصات',
+    justNow: 'الآن',
+    langToggle: 'EN',
+    loading: 'جار التحميل...',
+    new: 'جديد',
+    noArticlesMatch: 'لا توجد مقالات تطابق البحث.',
+    noArticlesYet: 'لا توجد مقالات بعد. جرّب "تحديث الكل".',
+    noFeeds: 'لا توجد خلاصات بعد. أضف واحدة من الشريط الجانبي للبدء.',
+    duplicateFeed: 'هذه الخلاصة موجودة بالفعل في اشتراكاتك.',
+    invalidFeed: 'هذا الرابط ليس خلاصة RSS/Atom صالحة.',
+    openFullArticle: 'فتح المقالة كاملة من المصدر',
+    readFullArticle: 'قراءة المقالة كاملة',
+    refreshAll: 'تحديث الكل',
+    refreshFeed: 'تحديث الخلاصة',
+    refreshing: 'جار التحديث...',
+    removeFeed: 'حذف الخلاصة',
+    removeFeedConfirm: 'حذف "{name}"؟',
+    search: 'بحث',
+    switchLanguage: 'تغيير اللغة',
+    themeDark: 'التبديل إلى الوضع الداكن',
+    themeLight: 'التبديل إلى الوضع الفاتح',
+    untitled: '(بدون عنوان)',
+    urlRequired: 'رابط الخلاصة مطلوب.',
+    units: { m: 'د', h: 'س', d: 'ي', mo: 'شهر', y: 'سنة' },
+  },
+};
+
 const state = {
   feeds: [],
   articles: [],
@@ -20,23 +89,30 @@ const state = {
   fields: { source: true, date: true, author: false, excerpt: true },
   sort: 'newest',
   theme: 'light',
+  lang: 'en',
   seen: new Set(),      // keys of articles we've already shown
   newKeys: new Set(),   // keys highlighted as NEW after a refresh
   firstLoad: true,
 };
 
 // ---------- helpers ----------
+function t(key) {
+  return i18n[state.lang][key] || i18n.en[key] || key;
+}
+
 function timeAgo(iso) {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (isNaN(then)) return '';
   const s = Math.floor((Date.now() - then) / 1000);
-  if (s < 60) return 'just now';
-  const m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
-  const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
-  const d = Math.floor(h / 24); if (d < 30) return d + 'd ago';
-  const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
-  return Math.floor(mo / 12) + 'y ago';
+  if (s < 60) return t('justNow');
+  const units = i18n[state.lang].units || i18n.en.units;
+  const m = Math.floor(s / 60); if (m < 60) return state.lang === 'ar' ? 'منذ ' + m + ' ' + units.m : m + units.m;
+  const h = Math.floor(m / 60); if (h < 24) return state.lang === 'ar' ? 'منذ ' + h + ' ' + units.h : h + units.h;
+  const d = Math.floor(h / 24); if (d < 30) return state.lang === 'ar' ? 'منذ ' + d + ' ' + units.d : d + units.d;
+  const mo = Math.floor(d / 30); if (mo < 12) return state.lang === 'ar' ? 'منذ ' + mo + ' ' + units.mo : mo + units.mo;
+  const y = Math.floor(mo / 12);
+  return state.lang === 'ar' ? 'منذ ' + y + ' ' + units.y : y + units.y;
 }
 function fmtAbsolute(iso) {
   if (!iso) return '';
@@ -45,6 +121,16 @@ function fmtAbsolute(iso) {
 }
 function safeHref(url) {
   return (typeof url === 'string' && /^https?:\/\//i.test(url)) ? url : null;
+}
+function hasRtlText(text) {
+  return /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text || '');
+}
+function localizeFeedError(message) {
+  if (state.lang !== 'ar' || typeof message !== 'string') return message;
+  if (message === i18n.en.urlRequired) return t('urlRequired');
+  if (message === i18n.en.duplicateFeed) return t('duplicateFeed');
+  if (message.startsWith('Not a valid RSS/Atom feed:')) return t('invalidFeed');
+  return message || t('couldNotAddFeed');
 }
 function countFor(url) { return state.articles.filter(a => a.sourceFeedUrl === url).length; }
 function feedByUrl(url) { return state.feeds.find(f => f.url === url); }
@@ -70,8 +156,67 @@ function applyTheme(theme) {
   state.theme = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', state.theme);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = state.theme === 'dark' ? '☀' : '☾';
+  if (btn) {
+    btn.textContent = state.theme === 'dark' ? '☀' : '☾';
+    btn.title = state.theme === 'dark' ? t('themeLight') : t('themeDark');
+  }
   try { localStorage.setItem('rss-theme', state.theme); } catch { /* ignore */ }
+}
+
+function applyLanguage(lang, rerender) {
+  state.lang = lang === 'ar' ? 'ar' : 'en';
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  document.title = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
+
+  const brand = document.querySelector('.brand-name');
+  if (brand) brand.textContent = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
+
+  const feedInput = document.getElementById('feed-url');
+  if (feedInput) feedInput.placeholder = t('addFeedUrl');
+
+  const addError = document.getElementById('add-error');
+  if (addError) {
+    addError.textContent = '';
+    addError.hidden = true;
+  }
+
+  const addBtn = document.getElementById('add-submit');
+  if (addBtn) addBtn.textContent = t('add');
+
+  const refreshBtn = document.getElementById('refresh-all');
+  if (refreshBtn && !refreshBtn.disabled) refreshBtn.textContent = '⟳ ' + t('refreshAll');
+
+  const searchInput = document.getElementById('search');
+  if (searchInput) searchInput.placeholder = t('search');
+
+  const langBtn = document.getElementById('lang-toggle');
+  if (langBtn) {
+    langBtn.textContent = t('langToggle');
+    langBtn.title = t('switchLanguage');
+  }
+
+  const closeBtn = document.getElementById('modal-close');
+  if (closeBtn) closeBtn.setAttribute('aria-label', t('close'));
+
+  const scrollBtn = document.getElementById('scroll-top');
+  if (scrollBtn) scrollBtn.setAttribute('aria-label', t('backToTop'));
+
+  const scrollLabel = document.querySelector('.scroll-top-label');
+  if (scrollLabel) scrollLabel.textContent = t('backToTop');
+
+  const loadingState = document.querySelector('#cards .state');
+  if (loadingState && loadingState.textContent.trim().toLowerCase().startsWith('loading')) {
+    loadingState.textContent = t('loading');
+  }
+
+  applyTheme(state.theme);
+  try { localStorage.setItem('rss-lang', state.lang); } catch { /* ignore */ }
+
+  if (rerender) {
+    renderSidebar();
+    renderCards();
+  }
 }
 
 // ---------- loading skeleton ----------
@@ -123,13 +268,13 @@ function renderSidebar() {
   const label = document.getElementById('feed-toggle-label');
   const icon = document.getElementById('feed-toggle-icon');
 
-  label.textContent = 'Feeds (' + state.feeds.length + ')';
+  label.textContent = t('feeds') + ' (' + state.feeds.length + ')';
   icon.textContent = state.feedsCollapsed ? '+' : '-';
   toggle.setAttribute('aria-expanded', String(!state.feedsCollapsed));
   nav.classList.toggle('collapsed', state.feedsCollapsed);
 
   nav.innerHTML = '';
-  nav.appendChild(navItem('all', 'All Feeds', state.articles.length, null));
+  nav.appendChild(navItem('all', t('allFeeds'), state.articles.length, null));
   for (const feed of state.feeds) {
     nav.appendChild(navItem(feed.url, feed.name, countFor(feed.url), feed));
   }
@@ -138,11 +283,13 @@ function renderSidebar() {
 function navItem(key, label, count, feed) {
   const item = document.createElement('div');
   item.className = 'nav-item' + (state.selected === key ? ' active' : '');
+  if (hasRtlText(label)) item.classList.add('rtl-feed');
 
   const name = document.createElement('span');
   name.className = 'nav-name';
+  name.dir = 'auto';
   name.textContent = label;
-  name.title = feed ? feed.url : 'All feeds';
+  name.title = feed ? feed.url : t('allFeeds');
 
   const meta = document.createElement('span');
   meta.className = 'nav-meta';
@@ -151,7 +298,7 @@ function navItem(key, label, count, feed) {
   if (feed) {
     const refresh = document.createElement('button');
     refresh.className = 'nav-refresh';
-    refresh.title = 'Refresh feed';
+    refresh.title = t('refreshFeed');
     refresh.textContent = '⟳';
     refresh.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -163,11 +310,11 @@ function navItem(key, label, count, feed) {
 
     const del = document.createElement('button');
     del.className = 'nav-del';
-    del.title = 'Remove feed';
+    del.title = t('removeFeed');
     del.textContent = '🗑';
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('Remove "' + feed.name + '"?')) return;
+      if (!confirm(t('removeFeedConfirm').replace('{name}', feed.name))) return;
       await api.deleteFeed(feed.id);
       if (state.selected === feed.url) state.selected = 'all';
       await loadAll();
@@ -215,7 +362,14 @@ function filteredArticles() {
 // ---------- rendering ----------
 function renderCards() {
   const feed = state.selected === 'all' ? null : feedByUrl(state.selected);
-  document.getElementById('view-name').textContent = feed ? feed.name : 'All Feeds';
+  const header = document.querySelector('.main-header');
+  const viewName = document.getElementById('view-name');
+  const isRtlFeed = Boolean(feed && hasRtlText(feed.name));
+  const isLtrFeed = Boolean(feed && !hasRtlText(feed.name));
+  header.classList.toggle('rtl-feed-view', isRtlFeed);
+  header.classList.toggle('ltr-feed-view', isLtrFeed);
+  viewName.dir = 'auto';
+  viewName.textContent = feed ? feed.name : t('allFeeds');
 
   const list = filteredArticles();
   const total = list.length;
@@ -225,11 +379,17 @@ function renderCards() {
   cards.innerHTML = '';
 
   if (state.feeds.length === 0) {
-    cards.innerHTML = '<p class="state">No feeds yet. Add one from the sidebar to get started.</p>';
+    const empty = document.createElement('p');
+    empty.className = 'state';
+    empty.textContent = t('noFeeds');
+    cards.appendChild(empty);
     return;
   }
   if (total === 0) {
-    cards.innerHTML = '<p class="state">No articles' + (state.search ? ' match your search.' : ' yet. Try “Refresh all”.') + '</p>';
+    const empty = document.createElement('p');
+    empty.className = 'state';
+    empty.textContent = state.search ? t('noArticlesMatch') : t('noArticlesYet');
+    cards.appendChild(empty);
     return;
   }
 
@@ -247,15 +407,25 @@ function renderCard(a) {
   if (showSource || showDate) {
     const head = document.createElement('div');
     head.className = 'card-head';
+    if (showSource && hasRtlText(a.sourceFeedName)) head.classList.add('rtl-meta');
+    if (showSource && !hasRtlText(a.sourceFeedName)) head.classList.add('ltr-meta');
     if (showSource) {
       const src = document.createElement('span');
       src.className = 'card-source';
+      src.dir = 'auto';
       src.textContent = a.sourceFeedName;
       head.appendChild(src);
     }
     if (showDate) {
+      if (showSource) {
+        const separator = document.createElement('span');
+        separator.className = 'card-meta-separator';
+        separator.textContent = '/';
+        head.appendChild(separator);
+      }
       const t = document.createElement('span');
-      t.textContent = (showSource ? ' / ' : '') + timeAgo(a.publishedAt);
+      t.className = 'card-time';
+      t.textContent = timeAgo(a.publishedAt);
       t.title = fmtAbsolute(a.publishedAt);
       head.appendChild(t);
     }
@@ -264,11 +434,12 @@ function renderCard(a) {
 
   const title = document.createElement('h3');
   title.className = 'card-title';
-  title.textContent = a.title || '(untitled)';
+  title.dir = 'auto';
+  title.textContent = a.title || t('untitled');
   if (isNew) {
     const badge = document.createElement('span');
     badge.className = 'new-badge';
-    badge.textContent = 'NEW';
+    badge.textContent = t('new');
     title.appendChild(badge);
   }
   title.addEventListener('click', () => openArticle(a));
@@ -277,13 +448,14 @@ function renderCard(a) {
   if (state.fields.author && a.author) {
     const author = document.createElement('div');
     author.className = 'card-author';
-    author.textContent = 'by ' + a.author;
+    author.textContent = t('by') + ' ' + a.author;
     card.appendChild(author);
   }
 
   if (state.fields.excerpt && a.summary) {
     const excerpt = document.createElement('p');
     excerpt.className = 'card-excerpt';
+    excerpt.dir = 'auto';
     excerpt.textContent = a.summary;
     card.appendChild(excerpt);
   }
@@ -292,7 +464,7 @@ function renderCard(a) {
   actions.className = 'card-actions';
   const expand = document.createElement('button');
   expand.className = 'card-icon';
-  expand.title = 'Open full article at source';
+  expand.title = t('openFullArticle');
   expand.textContent = '↗';
   expand.addEventListener('click', () => openArticle(a));
   actions.appendChild(expand);
@@ -329,10 +501,10 @@ function openModal(a) {
     link.href = href;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = a.title || '(untitled)';
+    link.textContent = a.title || t('untitled');
     title.appendChild(link);
   } else {
-    title.textContent = a.title || '(untitled)';
+    title.textContent = a.title || t('untitled');
   }
 
   content.append(meta, title);
@@ -340,7 +512,7 @@ function openModal(a) {
   if (a.author) {
     const author = document.createElement('div');
     author.className = 'modal-author';
-    author.textContent = 'by ' + a.author;
+    author.textContent = t('by') + ' ' + a.author;
     content.appendChild(author);
   }
 
@@ -356,7 +528,7 @@ function openModal(a) {
     more.href = href;
     more.target = '_blank';
     more.rel = 'noopener noreferrer';
-    more.textContent = 'Read full article ↗';
+    more.textContent = t('readFullArticle') + ' ↗';
     content.appendChild(more);
   }
 
@@ -393,9 +565,9 @@ document.getElementById('add-feed-form').addEventListener('submit', async (e) =>
     input.value = '';
     await loadAll();
   } else {
-    let msg = 'Could not add feed.';
+    let msg = t('couldNotAddFeed');
     try { msg = await res.json(); } catch { try { msg = await res.text(); } catch { /* ignore */ } }
-    errEl.textContent = (typeof msg === 'string' && msg) ? msg : 'Could not add feed.';
+    errEl.textContent = localizeFeedError((typeof msg === 'string' && msg) ? msg : t('couldNotAddFeed'));
     errEl.hidden = false;
   }
 });
@@ -403,10 +575,10 @@ document.getElementById('add-feed-form').addEventListener('submit', async (e) =>
 document.getElementById('refresh-all').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
-  btn.textContent = 'Refreshing…';
+  btn.textContent = '⟳ ' + t('refreshing');
   await api.refreshAll();
   await reloadArticles();
-  btn.textContent = '⟳ Refresh all';
+  btn.textContent = '⟳ ' + t('refreshAll');
   btn.disabled = false;
 });
 
@@ -424,6 +596,10 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
 
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  applyLanguage(state.lang === 'ar' ? 'en' : 'ar', true);
+});
+
 document.getElementById('scroll-top').addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
@@ -437,8 +613,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
 // ---------- init ----------
 (function init() {
   let theme = 'light';
+  let lang = 'en';
   try { theme = localStorage.getItem('rss-theme') || 'light'; } catch { /* ignore */ }
+  try { lang = localStorage.getItem('rss-lang') || 'en'; } catch { /* ignore */ }
   applyTheme(theme);
+  applyLanguage(lang, false);
   updateScrollTopButton();
 
   loadAll();
