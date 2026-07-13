@@ -8,3 +8,15 @@ Data/
 # IDE / user-specific
 .vs/
 *.user
+
+# Local secrets (use .NET User Secrets instead; these are extra safeguards)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+secrets.json
+appsettings.Secrets.json
+appsettings.*.Secrets.json
+appsettings.Local.json
+appsettings.*.Local.json

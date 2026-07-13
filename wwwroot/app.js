@@ -9,71 +9,114 @@ const api = {
   refreshFeed: (id) => fetch('/feeds/' + id + '/refresh', { method: 'POST' }),
   refreshAll: () => fetch('/feeds/refresh', { method: 'POST' }),
   river: () => fetch('/river').then(r => r.json()),
+  dailyBrief: (request) => fetch('/daily-brief', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  }),
 };
 
 const i18n = {
   en: {
+    readTime: '{minutes} min read',
+    categorySpotlight: 'Category spotlight',
+    closeCategory: 'Close category spotlight',
+    collapseBrief: 'Collapse daily brief',
+    expandBrief: 'Expand daily brief',
+    openFullBrief: 'Open full brief',
     add: 'Add',
     addFeedUrl: 'Add feed URL...',
     allFeeds: 'All Feeds',
     backToTop: 'Head to the top!',
     by: 'by',
+    catchMeUp: '✨ Catch Me Up',
     close: 'Close',
+    copied: 'Copied!',
+    copySummary: 'Copy Summary',
     couldNotAddFeed: 'Could not add feed.',
     feeds: 'Feeds',
+    generatedAt: 'Generated at {time}',
+    generatedFrom: 'Generated from {articles} articles across {feeds} feeds',
+    generatingBrief: 'Generating your AI Daily Brief...',
     justNow: 'just now',
     langToggle: 'ع',
     loading: 'Loading...',
     new: 'NEW',
     noArticlesMatch: 'No articles match your search.',
     noArticlesYet: 'No articles yet. Try "Refresh all".',
+    noArticlesToday: 'No articles were published today.',
     noFeeds: 'No feeds yet. Add one from the sidebar to get started.',
     duplicateFeed: 'This feed is already in your subscriptions.',
     invalidFeed: 'Not a valid RSS/Atom feed.',
     openFullArticle: 'Open full article at source',
     readFullArticle: 'Read full article',
+    regenerate: 'Regenerate',
     refreshAll: 'Refresh all',
     refreshFeed: 'Refresh feed',
     refreshing: 'Refreshing...',
     removeFeed: 'Remove feed',
     removeFeedConfirm: 'Remove "{name}"?',
     search: 'Search',
+    briefFailed: 'The AI Daily Brief could not be generated. Please try again.',
+    briefNotConfigured: 'The AI Daily Brief is not configured yet.',
+    briefTitle: '✨ AI Daily Brief',
+    retry: 'Retry',
     switchLanguage: 'Switch language',
     themeDark: 'Switch to dark mode',
     themeLight: 'Switch to light mode',
+    takesFewSeconds: 'This may take a few seconds.',
     untitled: '(untitled)',
     urlRequired: 'URL is required.',
     units: { m: 'm ago', h: 'h ago', d: 'd ago', mo: 'mo ago', y: 'y ago' },
   },
   ar: {
+    readTime: '\u0642\u0631\u0627\u0621\u0629 {minutes} \u062f',
+    categorySpotlight: '\u0646\u0638\u0631\u0629 \u0645\u0631\u0643\u0632\u0629',
+    closeCategory: '\u0625\u063a\u0644\u0627\u0642 \u0646\u0638\u0631\u0629 \u0627\u0644\u0641\u0626\u0629',
+    collapseBrief: '\u0637\u064a \u0627\u0644\u0645\u0648\u062c\u0632 \u0627\u0644\u064a\u0648\u0645\u064a',
+    expandBrief: '\u062a\u0648\u0633\u064a\u0639 \u0627\u0644\u0645\u0648\u062c\u0632 \u0627\u0644\u064a\u0648\u0645\u064a',
+    openFullBrief: '\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u062c\u0632 \u0643\u0627\u0645\u0644\u064b\u0627',
     add: 'إضافة',
     addFeedUrl: 'أضف رابط الخلاصة...',
     allFeeds: 'كل الخلاصات',
     backToTop: 'العودة للأعلى',
     by: 'بواسطة',
+    catchMeUp: '✨ ألحقني بالأخبار',
     close: 'إغلاق',
+    copied: 'تم النسخ!',
+    copySummary: 'نسخ الملخص',
     couldNotAddFeed: 'تعذر إضافة الخلاصة.',
     feeds: 'الخلاصات',
+    generatedAt: 'تم الإنشاء في {time}',
+    generatedFrom: 'تم إنشاؤه من {articles} مقالًا عبر {feeds} خلاصات',
+    generatingBrief: 'جارٍ إنشاء موجزك اليومي بالذكاء الاصطناعي...',
     justNow: 'الآن',
     langToggle: 'EN',
     loading: 'جار التحميل...',
     new: 'جديد',
     noArticlesMatch: 'لا توجد مقالات تطابق البحث.',
     noArticlesYet: 'لا توجد مقالات بعد. جرّب "تحديث الكل".',
+    noArticlesToday: 'لم تُنشر أي مقالات اليوم.',
     noFeeds: 'لا توجد خلاصات بعد. أضف واحدة من الشريط الجانبي للبدء.',
     duplicateFeed: 'هذه الخلاصة موجودة بالفعل في اشتراكاتك.',
     invalidFeed: 'هذا الرابط ليس خلاصة RSS/Atom صالحة.',
     openFullArticle: 'فتح المقالة كاملة من المصدر',
     readFullArticle: 'قراءة المقالة كاملة',
+    regenerate: 'إعادة الإنشاء',
     refreshAll: 'تحديث الكل',
     refreshFeed: 'تحديث الخلاصة',
     refreshing: 'جار التحديث...',
     removeFeed: 'حذف الخلاصة',
     removeFeedConfirm: 'حذف "{name}"؟',
     search: 'بحث',
+    briefFailed: 'تعذر إنشاء الموجز اليومي. يُرجى المحاولة مرة أخرى.',
+    briefNotConfigured: 'لم يتم إعداد الموجز اليومي بعد.',
+    briefTitle: '✨ الموجز اليومي بالذكاء الاصطناعي',
+    retry: 'إعادة المحاولة',
     switchLanguage: 'تغيير اللغة',
     themeDark: 'التبديل إلى الوضع الداكن',
     themeLight: 'التبديل إلى الوضع الفاتح',
+    takesFewSeconds: 'قد يستغرق هذا بضع ثوانٍ.',
     untitled: '(بدون عنوان)',
     urlRequired: 'رابط الخلاصة مطلوب.',
     units: { m: 'د', h: 'س', d: 'ي', mo: 'شهر', y: 'سنة' },
@@ -93,11 +136,26 @@ const state = {
   seen: new Set(),      // keys of articles we've already shown
   newKeys: new Set(),   // keys highlighted as NEW after a refresh
   firstLoad: true,
+  dailyBrief: {
+    status: 'idle',
+    data: null,
+    error: '',
+    collapsed: false,
+    spotlightSection: null,
+    language: null,
+  },
 };
 
 // ---------- helpers ----------
 function t(key) {
   return i18n[state.lang][key] || i18n.en[key] || key;
+}
+
+function tf(key, values) {
+  return Object.entries(values).reduce(
+    (text, entry) => text.replace('{' + entry[0] + '}', entry[1]),
+    t(key)
+  );
 }
 
 function timeAgo(iso) {
@@ -164,7 +222,11 @@ function applyTheme(theme) {
 }
 
 function applyLanguage(lang, rerender) {
-  state.lang = lang === 'ar' ? 'ar' : 'en';
+  const nextLanguage = lang === 'ar' ? 'ar' : 'en';
+  if (state.dailyBrief.language && state.dailyBrief.language !== nextLanguage) {
+    resetDailyBrief();
+  }
+  state.lang = nextLanguage;
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   document.title = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
@@ -190,6 +252,9 @@ function applyLanguage(lang, rerender) {
   const searchInput = document.getElementById('search');
   if (searchInput) searchInput.placeholder = t('search');
 
+  const catchUpBtn = document.getElementById('catch-me-up');
+  if (catchUpBtn) catchUpBtn.textContent = t('catchMeUp');
+
   const langBtn = document.getElementById('lang-toggle');
   if (langBtn) {
     langBtn.textContent = t('langToggle');
@@ -211,6 +276,7 @@ function applyLanguage(lang, rerender) {
   }
 
   applyTheme(state.theme);
+  updateDailyBriefButton();
   try { localStorage.setItem('rss-lang', state.lang); } catch { /* ignore */ }
 
   if (rerender) {
@@ -219,11 +285,377 @@ function applyLanguage(lang, rerender) {
   }
 }
 
+// ---------- AI daily brief ----------
+function resetDailyBrief() {
+  state.dailyBrief.status = 'idle';
+  state.dailyBrief.data = null;
+  state.dailyBrief.error = '';
+  state.dailyBrief.collapsed = false;
+  state.dailyBrief.spotlightSection = null;
+  state.dailyBrief.language = null;
+}
+
+function updateDailyBriefButton() {
+  const button = document.getElementById('catch-me-up');
+  if (!button) return;
+  button.disabled = state.dailyBrief.status === 'loading';
+  button.textContent = t('catchMeUp');
+}
+
+function todayUtcRange() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { dayStartUtc: start.toISOString(), dayEndUtc: end.toISOString() };
+}
+
+function scrollToDailyBrief() {
+  requestAnimationFrame(() => {
+    const card = document.getElementById('daily-brief-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+async function generateDailyBrief(regenerate) {
+  const brief = state.dailyBrief;
+  if (!regenerate && brief.data && brief.language === state.lang) {
+    brief.collapsed = false;
+    brief.spotlightSection = null;
+    brief.status = 'success';
+    renderCards();
+    scrollToDailyBrief();
+    return;
+  }
+
+  if (brief.status === 'loading') {
+    scrollToDailyBrief();
+    return;
+  }
+
+  const requestLanguage = state.lang;
+  brief.status = 'loading';
+  brief.data = null;
+  brief.error = '';
+  brief.collapsed = false;
+  brief.spotlightSection = null;
+  brief.language = requestLanguage;
+  updateDailyBriefButton();
+  renderCards();
+  scrollToDailyBrief();
+
+  try {
+    const response = await api.dailyBrief({
+      ...todayUtcRange(),
+      language: requestLanguage,
+      regenerate: Boolean(regenerate)
+    });
+
+    let payload = null;
+    try { payload = await response.json(); } catch { /* handled below */ }
+
+    if (!response.ok) {
+      let message = t('briefFailed');
+      if (response.status === 404) message = t('noArticlesToday');
+      else if (response.status === 503) message = t('briefNotConfigured');
+      else if (requestLanguage === 'en' && payload && payload.error) message = payload.error;
+      throw new Error(message);
+    }
+
+    if (state.lang !== requestLanguage) return;
+    brief.data = payload;
+    brief.status = 'success';
+  } catch (error) {
+    if (state.lang !== requestLanguage) return;
+    brief.error = error instanceof Error ? error.message : t('briefFailed');
+    brief.status = 'error';
+  } finally {
+    if (state.lang === requestLanguage) {
+      updateDailyBriefButton();
+      renderCards();
+      scrollToDailyBrief();
+    }
+  }
+}
+
+function briefAsText(brief) {
+  const parts = [t('briefTitle'), '', brief.introduction];
+  for (const section of brief.sections || []) {
+    parts.push('', section.title);
+    for (const bullet of section.bullets || []) parts.push('• ' + bullet);
+  }
+  return parts.join('\n');
+}
+
+function dailyBriefReadingMinutes(brief) {
+  const text = [
+    brief.introduction || '',
+    ...(brief.sections || []).flatMap(section => [
+      section.title || '',
+      ...(section.bullets || [])
+    ])
+  ].join(' ').trim();
+  const words = text ? text.split(/\s+/u).length : 0;
+  return Math.max(1, Math.ceil(words / 220));
+}
+
+async function copyDailyBrief(button) {
+  const text = briefAsText(state.dailyBrief.data);
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    textArea.remove();
+  }
+  button.textContent = t('copied');
+  window.setTimeout(() => { button.textContent = t('copySummary'); }, 1400);
+}
+
+function renderDailyBriefCard() {
+  const briefState = state.dailyBrief;
+  const card = document.createElement('article');
+  card.id = 'daily-brief-card';
+  card.className = 'card daily-brief-card daily-brief-' + briefState.status;
+  card.setAttribute('aria-live', briefState.status === 'loading' ? 'polite' : 'assertive');
+
+  if (briefState.status === 'loading') {
+    const loading = document.createElement('div');
+    loading.className = 'daily-brief-state';
+    const spinner = document.createElement('span');
+    spinner.className = 'daily-brief-spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = t('generatingBrief');
+    const detail = document.createElement('p');
+    detail.textContent = t('takesFewSeconds');
+    text.append(title, detail);
+    loading.append(spinner, text);
+    card.appendChild(loading);
+    return card;
+  }
+
+  if (briefState.status === 'error') {
+    const errorState = document.createElement('div');
+    errorState.className = 'daily-brief-state daily-brief-error-content';
+    const text = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = t('briefTitle');
+    const detail = document.createElement('p');
+    detail.textContent = briefState.error || t('briefFailed');
+    text.append(title, detail);
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'daily-brief-action primary';
+    retry.textContent = t('retry');
+    retry.addEventListener('click', () => generateDailyBrief(false));
+    errorState.append(text, retry);
+    card.appendChild(errorState);
+    return card;
+  }
+
+  const brief = briefState.data;
+
+  if (briefState.collapsed) {
+    card.classList.add('daily-brief-collapsed');
+    card.removeAttribute('aria-live');
+
+    const ribbon = document.createElement('div');
+    ribbon.className = 'daily-brief-ribbon';
+
+    const expand = document.createElement('button');
+    expand.type = 'button';
+    expand.className = 'daily-brief-ribbon-title';
+    expand.setAttribute('aria-expanded', 'false');
+    expand.setAttribute('aria-label', t('expandBrief'));
+
+    const sparkle = document.createElement('span');
+    sparkle.setAttribute('aria-hidden', 'true');
+    sparkle.textContent = '\u2728';
+    const compactTitle = document.createElement('strong');
+    compactTitle.textContent = t('briefTitle').replace(/^\u2728\s*/, '');
+    const chevron = document.createElement('span');
+    chevron.className = 'daily-brief-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '\u25be';
+    expand.append(sparkle, compactTitle, chevron);
+    expand.addEventListener('click', () => {
+      briefState.collapsed = false;
+      briefState.spotlightSection = null;
+      renderCards();
+      scrollToDailyBrief();
+    });
+
+    const categories = document.createElement('div');
+    categories.className = 'daily-brief-ribbon-categories';
+    for (const [sectionIndex, section] of (brief.sections || []).entries()) {
+      const category = document.createElement('button');
+      category.type = 'button';
+      category.className = 'daily-brief-category';
+      const isActive = briefState.spotlightSection === sectionIndex;
+      category.classList.toggle('active', isActive);
+      category.textContent = section.title;
+      category.title = (section.bullets || [])[0] || section.title;
+      category.setAttribute('aria-expanded', String(isActive));
+      category.setAttribute('aria-controls', 'daily-brief-spotlight');
+      category.addEventListener('click', () => {
+        briefState.spotlightSection = isActive ? null : sectionIndex;
+        renderCards();
+      });
+      categories.appendChild(category);
+    }
+
+    ribbon.append(expand, categories);
+    card.appendChild(ribbon);
+
+    const spotlightSection = (brief.sections || [])[briefState.spotlightSection];
+    if (spotlightSection) {
+      const spotlight = document.createElement('section');
+      spotlight.id = 'daily-brief-spotlight';
+      spotlight.className = 'daily-brief-spotlight';
+
+      const spotlightHeader = document.createElement('header');
+      spotlightHeader.className = 'daily-brief-spotlight-header';
+      const spotlightHeading = document.createElement('div');
+      const eyebrow = document.createElement('span');
+      eyebrow.className = 'daily-brief-spotlight-eyebrow';
+      eyebrow.textContent = t('categorySpotlight');
+      const sectionTitle = document.createElement('h3');
+      sectionTitle.textContent = spotlightSection.title;
+      spotlightHeading.append(eyebrow, sectionTitle);
+
+      const closeSpotlight = document.createElement('button');
+      closeSpotlight.type = 'button';
+      closeSpotlight.className = 'daily-brief-spotlight-close';
+      closeSpotlight.setAttribute('aria-label', t('closeCategory'));
+      closeSpotlight.textContent = '\u00d7';
+      closeSpotlight.addEventListener('click', () => {
+        briefState.spotlightSection = null;
+        renderCards();
+      });
+      spotlightHeader.append(spotlightHeading, closeSpotlight);
+
+      const points = document.createElement('ol');
+      points.className = 'daily-brief-spotlight-points';
+      for (const bullet of spotlightSection.bullets || []) {
+        const point = document.createElement('li');
+        const pointText = document.createElement('span');
+        pointText.textContent = bullet;
+        point.appendChild(pointText);
+        points.appendChild(point);
+      }
+
+      const openFull = document.createElement('button');
+      openFull.type = 'button';
+      openFull.className = 'daily-brief-spotlight-open';
+      openFull.textContent = t('openFullBrief') + ' \u2192';
+      openFull.addEventListener('click', () => {
+        briefState.collapsed = false;
+        briefState.spotlightSection = null;
+        renderCards();
+        scrollToDailyBrief();
+      });
+
+      spotlight.append(spotlightHeader, points, openFull);
+      card.appendChild(spotlight);
+    }
+    return card;
+  }
+
+  const header = document.createElement('header');
+  header.className = 'daily-brief-header';
+  const headingGroup = document.createElement('div');
+  const title = document.createElement('h2');
+  title.textContent = t('briefTitle');
+  const subtitle = document.createElement('p');
+  subtitle.textContent = tf('generatedFrom', {
+    articles: brief.articleCount,
+    feeds: brief.feedCount
+  });
+  const readTime = document.createElement('span');
+  readTime.className = 'daily-brief-read-time';
+  readTime.textContent = tf('readTime', {
+    minutes: dailyBriefReadingMinutes(brief)
+  });
+  const headerDetails = document.createElement('div');
+  headerDetails.className = 'daily-brief-header-details';
+  headerDetails.append(subtitle, readTime);
+  headingGroup.append(title, headerDetails);
+  const collapse = document.createElement('button');
+  collapse.type = 'button';
+  collapse.className = 'daily-brief-close';
+  collapse.setAttribute('aria-label', t('collapseBrief'));
+  collapse.setAttribute('aria-expanded', 'true');
+  collapse.textContent = '\u2212';
+  collapse.addEventListener('click', () => {
+    briefState.collapsed = true;
+    briefState.spotlightSection = null;
+    renderCards();
+  });
+  header.append(headingGroup, collapse);
+
+  const body = document.createElement('div');
+  body.className = 'daily-brief-body';
+  const introduction = document.createElement('p');
+  introduction.className = 'daily-brief-introduction';
+  introduction.textContent = brief.introduction;
+  body.appendChild(introduction);
+  for (const section of brief.sections || []) {
+    const sectionElement = document.createElement('section');
+    const sectionTitle = document.createElement('h3');
+    sectionTitle.textContent = section.title;
+    const bullets = document.createElement('ul');
+    for (const bullet of section.bullets || []) {
+      const item = document.createElement('li');
+      item.textContent = bullet;
+      bullets.appendChild(item);
+    }
+    sectionElement.append(sectionTitle, bullets);
+    body.appendChild(sectionElement);
+  }
+
+  const footer = document.createElement('footer');
+  footer.className = 'daily-brief-footer';
+  const generatedAt = document.createElement('span');
+  const time = new Date(brief.generatedAt).toLocaleTimeString(
+    state.lang === 'ar' ? 'ar-EG' : undefined,
+    { hour: '2-digit', minute: '2-digit' }
+  );
+  generatedAt.textContent = tf('generatedAt', { time });
+  const actions = document.createElement('div');
+  actions.className = 'daily-brief-actions';
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'daily-brief-action';
+  copy.textContent = t('copySummary');
+  copy.addEventListener('click', () => copyDailyBrief(copy));
+  const regenerate = document.createElement('button');
+  regenerate.type = 'button';
+  regenerate.className = 'daily-brief-action primary';
+  regenerate.textContent = t('regenerate');
+  regenerate.addEventListener('click', () => generateDailyBrief(true));
+  actions.append(copy, regenerate);
+  footer.append(generatedAt, actions);
+
+  card.append(header, body, footer);
+  return card;
+}
+
 // ---------- loading skeleton ----------
 function renderSkeleton(n) {
   n = n || 6;
   const cards = document.getElementById('cards');
   cards.innerHTML = '';
+
+  if (state.dailyBrief.status !== 'idle') {
+    cards.appendChild(renderDailyBriefCard());
+  }
   for (let i = 0; i < n; i++) {
     const c = document.createElement('article');
     c.className = 'card skeleton';
@@ -377,6 +809,10 @@ function renderCards() {
 
   const cards = document.getElementById('cards');
   cards.innerHTML = '';
+
+  if (state.dailyBrief.status !== 'idle') {
+    cards.appendChild(renderDailyBriefCard());
+  }
 
   if (state.feeds.length === 0) {
     const empty = document.createElement('p');
@@ -611,6 +1047,10 @@ document.getElementById('feed-toggle').addEventListener('click', () => {
 document.getElementById('search').addEventListener('input', (e) => {
   state.search = e.target.value;
   renderCards();
+});
+
+document.getElementById('catch-me-up').addEventListener('click', () => {
+  generateDailyBrief(false);
 });
 
 document.getElementById('theme-toggle').addEventListener('click', () => {

@@ -15,6 +15,12 @@ builder.Services.AddSyndicationClient();
 builder.Services.AddScoped<FeedArticleService>();
 builder.Services.AddSingleton<ArticleCache>();
 builder.Services.AddSingleton<HtmlContentSanitizer>();
+builder.Services.AddSingleton<DailyBriefCache>();
+builder.Services.AddHttpClient<DailyBriefService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["DeepSeek:BaseUrl"] ?? "https://api.deepseek.com/");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 
 var app = builder.Build();
 
@@ -151,6 +157,98 @@ app.MapPost("/feeds/refresh", async (JsonFeedStorage storage, FeedArticleService
     await Task.WhenAll(tasks);
 
     return Results.NoContent();
+});
+
+app.MapPost("/daily-brief", async (
+    DailyBriefRequest request,
+    JsonFeedStorage storage,
+    FeedArticleService articleService,
+    ArticleCache articleCache,
+    DailyBriefService briefService,
+    DailyBriefCache briefCache,
+    ILogger<Program> logger,
+    CancellationToken ct) =>
+{
+    var language = request.Language == "ar" ? "ar" : "en";
+    var dayStartUtc = request.DayStartUtc.ToUniversalTime();
+    var dayEndUtc = request.DayEndUtc.ToUniversalTime();
+    var dayLength = dayEndUtc - dayStartUtc;
+
+    // Browser-local calendar days can be 23 or 25 hours around daylight-saving changes.
+    if (dayLength < TimeSpan.FromHours(20) || dayLength > TimeSpan.FromHours(26))
+        return Results.BadRequest(new { error = "The requested day range is invalid." });
+
+    var now = DateTimeOffset.UtcNow;
+    if (dayStartUtc < now.AddHours(-48) || dayEndUtc > now.AddHours(48))
+        return Results.BadRequest(new { error = "Only the current day can be summarized." });
+
+    if (!request.Regenerate)
+    {
+        var cachedBrief = briefCache.Get(dayStartUtc, dayEndUtc, language);
+        if (cachedBrief is not null)
+            return Results.Ok(cachedBrief);
+    }
+
+    var feeds = await storage.LoadAsync();
+    var tasks = feeds.Select(async feed =>
+    {
+        var cachedArticles = articleCache.Get(feed.Id);
+        if (cachedArticles is not null)
+            return cachedArticles;
+
+        try
+        {
+            var articles = await articleService.GetArticlesAsync(feed, ct);
+            articleCache.Set(feed.Id, articles);
+            return articles;
+        }
+        catch (FeedFetchException)
+        {
+            return [];
+        }
+    });
+
+    var articlesFromFeeds = await Task.WhenAll(tasks);
+    var todaysArticles = articlesFromFeeds
+        .SelectMany(articles => articles)
+        .Where(article => article.PublishedAt >= dayStartUtc && article.PublishedAt < dayEndUtc)
+        .ToList();
+
+    if (todaysArticles.Count == 0)
+        return Results.NotFound(new { error = "No articles were published today." });
+
+    try
+    {
+        var brief = await briefService.GenerateAsync(todaysArticles, language, ct);
+        briefCache.Set(dayStartUtc, dayEndUtc, language, brief);
+        return Results.Ok(brief);
+    }
+    catch (DailyBriefConfigurationException ex)
+    {
+        logger.LogWarning(ex, "Daily brief generation is not configured.");
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (DailyBriefGenerationException ex)
+    {
+        logger.LogError(ex, "Daily brief generation failed.");
+        return Results.Json(
+            new { error = "The AI Daily Brief could not be generated. Please try again." },
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+    catch (HttpRequestException ex)
+    {
+        logger.LogError(ex, "Could not reach DeepSeek while generating the daily brief.");
+        return Results.Json(
+            new { error = "The AI service is unavailable right now. Please try again." },
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+    catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+    {
+        logger.LogError(ex, "DeepSeek timed out while generating the daily brief.");
+        return Results.Json(
+            new { error = "The AI service took too long to respond. Please try again." },
+            statusCode: StatusCodes.Status504GatewayTimeout);
+    }
 });
 
 app.MapDelete("/feeds/{id:guid}", async (Guid id, JsonFeedStorage storage, ArticleCache cache) =>
