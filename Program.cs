@@ -290,4 +290,6 @@ _ = Task.Run(async () =>
     catch { /* best-effort warm-up; never let it crash startup */ }
 });
 
+app.MapFallbackToFile("index.html");
+
 app.Run();

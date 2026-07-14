@@ -45,10 +45,16 @@ public sealed class DailyBriefService(HttpClient httpClient, IConfiguration conf
             {
               "introduction": "A useful 2-3 sentence overview.",
               "sections": [
-                { "title": "an emoji followed by a category name", "bullets": ["concise point", "concise point"] }
+                {
+                  "title": "one relevant emoji followed by a concise category name",
+                  "bullets": ["concise point", "concise point"],
+                  "sourceNumbers": [1, 2]
+                }
               ]
             }
             Create 2-5 relevant categorized sections, each with 2-5 concise bullets. Omit categories with no relevant news.
+            For every section, include the article numbers that directly support its bullets in sourceNumbers.
+            Use only article numbers from the supplied list. Do not output URLs.
             """;
 
         var userPrompt = "Create today's daily brief from this JSON article list:\n" +
@@ -105,6 +111,21 @@ public sealed class DailyBriefService(HttpClient httpClient, IConfiguration conf
                     .Where(bullet => !string.IsNullOrWhiteSpace(bullet))
                     .Take(5)
                     .Select(bullet => Truncate(bullet, 500) ?? "")
+                    .ToList(),
+                Sources = (section.SourceNumbers ?? [])
+                    .Where(number => number >= 1 && number <= selectedArticles.Count)
+                    .Distinct()
+                    .Take(10)
+                    .Select(number => selectedArticles[number - 1])
+                    .Where(article => IsSafeHttpUrl(article.Link))
+                    .GroupBy(article => article.Link, StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .Select(article => new DailyBriefSource
+                    {
+                        Title = Truncate(article.Title, 300) ?? article.SourceFeedName,
+                        SourceName = Truncate(article.SourceFeedName, 150) ?? "",
+                        Url = article.Link!
+                    })
                     .ToList()
             })
             .Where(section => section.Bullets.Count > 0)
@@ -131,6 +152,10 @@ public sealed class DailyBriefService(HttpClient httpClient, IConfiguration conf
         return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "…";
     }
 
+    private static bool IsSafeHttpUrl(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
     private sealed class ChatCompletionResponse
     {
         public List<ChatChoice>? Choices { get; set; }
@@ -149,7 +174,14 @@ public sealed class DailyBriefService(HttpClient httpClient, IConfiguration conf
     private sealed class DailyBriefContent
     {
         public string Introduction { get; set; } = "";
-        public List<DailyBriefSection>? Sections { get; set; }
+        public List<GeneratedDailyBriefSection>? Sections { get; set; }
+    }
+
+    private sealed class GeneratedDailyBriefSection
+    {
+        public string Title { get; set; } = "";
+        public List<string>? Bullets { get; set; }
+        public List<int>? SourceNumbers { get; set; }
     }
 }
 

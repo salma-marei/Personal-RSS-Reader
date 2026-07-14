@@ -29,7 +29,7 @@ const i18n = {
     allFeeds: 'All Feeds',
     backToTop: 'Head to the top!',
     by: 'by',
-    catchMeUp: '✨ Catch Me Up',
+    catchMeUp: 'Catch Me Up',
     close: 'Close',
     copied: 'Copied!',
     copySummary: 'Copy Summary',
@@ -44,24 +44,30 @@ const i18n = {
     new: 'NEW',
     noArticlesMatch: 'No articles match your search.',
     noArticlesYet: 'No articles yet. Try "Refresh all".',
+    noArticlesInFeed: 'No articles yet. Try refreshing this feed.',
     noArticlesToday: 'No articles were published today.',
-    noFeeds: 'No feeds yet. Add one from the sidebar to get started.',
+    noFeeds: 'No feeds yet. Open Manage Feeds to add your first subscription.',
     duplicateFeed: 'This feed is already in your subscriptions.',
     invalidFeed: 'Not a valid RSS/Atom feed.',
     openFullArticle: 'Open full article at source',
     readFullArticle: 'Read full article',
     regenerate: 'Regenerate',
     refreshAll: 'Refresh all',
-    refreshFeed: 'Refresh feed',
+    refreshFeed: 'Refresh this feed',
+    refreshingAll: 'Refreshing all...',
+    refreshingFeed: 'Refreshing feed...',
     refreshing: 'Refreshing...',
     removeFeed: 'Remove feed',
     removeFeedConfirm: 'Remove "{name}"?',
     search: 'Search',
     briefFailed: 'The AI Daily Brief could not be generated. Please try again.',
     briefNotConfigured: 'The AI Daily Brief is not configured yet.',
-    briefTitle: '✨ AI Daily Brief',
+    briefTitle: 'AI Daily Brief',
+    briefDisplayTitle: 'Daily Brief',
     retry: 'Retry',
     switchLanguage: 'Switch language',
+    sourceLinks: 'Contributing sources',
+    sources: '{count} sources',
     themeDark: 'Switch to dark mode',
     themeLight: 'Switch to light mode',
     takesFewSeconds: 'This may take a few seconds.',
@@ -81,7 +87,7 @@ const i18n = {
     allFeeds: 'كل الخلاصات',
     backToTop: 'العودة للأعلى',
     by: 'بواسطة',
-    catchMeUp: '✨ ألحقني بالأخبار',
+    catchMeUp: 'ألحقني بالأخبار',
     close: 'إغلاق',
     copied: 'تم النسخ!',
     copySummary: 'نسخ الملخص',
@@ -96,24 +102,30 @@ const i18n = {
     new: 'جديد',
     noArticlesMatch: 'لا توجد مقالات تطابق البحث.',
     noArticlesYet: 'لا توجد مقالات بعد. جرّب "تحديث الكل".',
+    noArticlesInFeed: 'لا توجد مقالات بعد. جرّب تحديث هذه الخلاصة.',
     noArticlesToday: 'لم تُنشر أي مقالات اليوم.',
-    noFeeds: 'لا توجد خلاصات بعد. أضف واحدة من الشريط الجانبي للبدء.',
+    noFeeds: 'لا توجد خلاصات بعد. افتح إدارة الخلاصات لإضافة اشتراكك الأول.',
     duplicateFeed: 'هذه الخلاصة موجودة بالفعل في اشتراكاتك.',
     invalidFeed: 'هذا الرابط ليس خلاصة RSS/Atom صالحة.',
     openFullArticle: 'فتح المقالة كاملة من المصدر',
     readFullArticle: 'قراءة المقالة كاملة',
     regenerate: 'إعادة الإنشاء',
     refreshAll: 'تحديث الكل',
-    refreshFeed: 'تحديث الخلاصة',
+    refreshFeed: 'تحديث هذه الخلاصة',
+    refreshingAll: 'جارٍ تحديث الكل...',
+    refreshingFeed: 'جارٍ تحديث الخلاصة...',
     refreshing: 'جار التحديث...',
     removeFeed: 'حذف الخلاصة',
     removeFeedConfirm: 'حذف "{name}"؟',
     search: 'بحث',
     briefFailed: 'تعذر إنشاء الموجز اليومي. يُرجى المحاولة مرة أخرى.',
     briefNotConfigured: 'لم يتم إعداد الموجز اليومي بعد.',
-    briefTitle: '✨ الموجز اليومي بالذكاء الاصطناعي',
+    briefTitle: 'الموجز اليومي بالذكاء الاصطناعي',
+    briefDisplayTitle: 'الموجز اليومي',
     retry: 'إعادة المحاولة',
     switchLanguage: 'تغيير اللغة',
+    sourceLinks: 'المصادر المساهمة',
+    sources: '{count} مصادر',
     themeDark: 'التبديل إلى الوضع الداكن',
     themeLight: 'التبديل إلى الوضع الفاتح',
     takesFewSeconds: 'قد يستغرق هذا بضع ثوانٍ.',
@@ -127,7 +139,6 @@ const state = {
   feeds: [],
   articles: [],
   selected: 'all',
-  feedsCollapsed: false,
   search: '',
   fields: { source: true, date: true, author: false, excerpt: true },
   sort: 'newest',
@@ -142,9 +153,16 @@ const state = {
     error: '',
     collapsed: false,
     spotlightSection: null,
+    sourceSection: null,
     language: null,
   },
 };
+
+let recentFeedIds = [];
+try {
+  recentFeedIds = JSON.parse(localStorage.getItem('rss-recent-feeds') || '[]');
+  if (!Array.isArray(recentFeedIds)) recentFeedIds = [];
+} catch { recentFeedIds = []; }
 
 // ---------- helpers ----------
 function t(key) {
@@ -183,6 +201,60 @@ function safeHref(url) {
 function hasRtlText(text) {
   return /[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text || '');
 }
+function createAiBadge() {
+  const badge = document.createElement('span');
+  badge.className = 'ai-badge';
+  badge.setAttribute('aria-hidden', 'true');
+  badge.textContent = 'AI';
+  return badge;
+}
+function setAiLabel(element, label) {
+  element.classList.add('icon-label');
+  element.replaceChildren(createAiBadge(), document.createTextNode(label));
+}
+function createSourceButton(section, sectionIndex, expanded) {
+  const sources = section.sources || [];
+  if (!sources.length) return null;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'daily-brief-source-button';
+  button.title = tf('sources', { count: sources.length });
+  button.setAttribute('aria-label', button.title);
+  button.setAttribute('aria-expanded', String(expanded));
+  button.setAttribute('aria-controls', `daily-brief-sources-${sectionIndex}`);
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  const count = document.createElement('span');
+  count.textContent = sources.length;
+  button.appendChild(count);
+  return button;
+}
+function createSourcesPanel(section, sectionIndex) {
+  const panel = document.createElement('div');
+  panel.id = `daily-brief-sources-${sectionIndex}`;
+  panel.className = 'daily-brief-sources-panel';
+  panel.setAttribute('aria-label', t('sourceLinks'));
+  const list = document.createElement('ul');
+  for (const source of section.sources || []) {
+    const href = safeHref(source.url);
+    if (!href) continue;
+    const item = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    const publication = document.createElement('span');
+    publication.className = 'daily-brief-source-publication';
+    publication.textContent = source.sourceName || t('sourceLinks');
+    const title = document.createElement('span');
+    title.className = 'daily-brief-source-title';
+    title.textContent = source.title || source.sourceName || href;
+    link.append(publication, title);
+    item.appendChild(link);
+    list.appendChild(item);
+  }
+  panel.appendChild(list);
+  return panel;
+}
 function localizeFeedError(message) {
   if (state.lang !== 'ar' || typeof message !== 'string') return message;
   if (message === i18n.en.urlRequired) return t('urlRequired');
@@ -213,10 +285,17 @@ function markNew(articles) {
 function applyTheme(theme) {
   state.theme = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', state.theme);
-  const btn = document.getElementById('theme-toggle');
-  if (btn) {
-    btn.textContent = state.theme === 'dark' ? '☀' : '☾';
+  for (const id of ['theme-toggle', 'mobile-theme-toggle']) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    if (id === 'theme-toggle') btn.textContent = state.theme === 'dark' ? '☀' : '☾';
     btn.title = state.theme === 'dark' ? t('themeLight') : t('themeDark');
+  }
+  const mobileThemeValue = document.getElementById('mobile-theme-value');
+  if (mobileThemeValue) {
+    mobileThemeValue.textContent = state.lang === 'ar'
+      ? (state.theme === 'dark' ? 'التبديل إلى الفاتح' : 'التبديل إلى الداكن')
+      : (state.theme === 'dark' ? 'Switch to Light' : 'Switch to Dark');
   }
   try { localStorage.setItem('rss-theme', state.theme); } catch { /* ignore */ }
 }
@@ -231,11 +310,14 @@ function applyLanguage(lang, rerender) {
   document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
   document.title = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
 
-  const brand = document.querySelector('.brand-name');
-  if (brand) brand.textContent = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
+  document.querySelectorAll('.brand-name, .mobile-brand-name').forEach(brand => {
+    brand.textContent = state.lang === 'ar' ? 'قارئ الخلاصات' : 'Feed Reader';
+  });
 
-  const feedInput = document.getElementById('feed-url');
-  if (feedInput) feedInput.placeholder = t('addFeedUrl');
+  const sidebarFeedSearch = document.getElementById('sidebar-feed-search');
+  if (sidebarFeedSearch) sidebarFeedSearch.placeholder = state.lang === 'ar' ? 'ابحث عن خلاصة' : 'Find a feed';
+  const sidebarManageFeeds = document.getElementById('sidebar-manage-feeds');
+  if (sidebarManageFeeds) sidebarManageFeeds.textContent = state.lang === 'ar' ? 'إدارة كل الخلاصات ←' : 'Manage all feeds →';
 
   const addError = document.getElementById('add-error');
   if (addError) {
@@ -243,22 +325,57 @@ function applyLanguage(lang, rerender) {
     addError.hidden = true;
   }
 
-  const addBtn = document.getElementById('add-submit');
-  if (addBtn) addBtn.textContent = t('add');
-
   const refreshBtn = document.getElementById('refresh-all');
-  if (refreshBtn && !refreshBtn.disabled) refreshBtn.textContent = '⟳ ' + t('refreshAll');
+  if (refreshBtn && !refreshBtn.disabled) updateSidebarRefreshLabel();
 
   const searchInput = document.getElementById('search');
   if (searchInput) searchInput.placeholder = t('search');
+  const mobileSearchInput = document.getElementById('mobile-search');
+  if (mobileSearchInput) mobileSearchInput.placeholder = t('search');
+  const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+  if (mobileSearchToggle) mobileSearchToggle.setAttribute('aria-label', t('search'));
+  const mobileFeedsLink = document.getElementById('mobile-feeds-link');
+  if (mobileFeedsLink) mobileFeedsLink.textContent = t('feeds');
+  const mobileFeedSearch = document.getElementById('mobile-feed-search');
+  if (mobileFeedSearch) mobileFeedSearch.placeholder = state.lang === 'ar' ? 'ابحث عن خلاصة' : 'Find a feed';
+  const mobileManageFeeds = document.getElementById('mobile-manage-feeds');
+  if (mobileManageFeeds) mobileManageFeeds.textContent = state.lang === 'ar' ? 'إدارة كل الخلاصات ←' : 'Manage all feeds →';
+  const managerTitle = document.getElementById('feed-manager-title');
+  if (managerTitle) managerTitle.textContent = state.lang === 'ar' ? 'إدارة الخلاصات' : 'Manage Feeds';
+  const managerSubtitle = document.getElementById('feed-manager-subtitle');
+  if (managerSubtitle) managerSubtitle.textContent = state.lang === 'ar' ? 'أضف اشتراكاتك أو ابحث عنها أو احذفها.' : 'Add, find, or remove your subscriptions.';
+  const managerBack = document.getElementById('feed-manager-back');
+  if (managerBack) managerBack.textContent = state.lang === 'ar' ? 'رجوع →' : '← Back';
+  const managerUrl = document.getElementById('feed-manager-url');
+  if (managerUrl) managerUrl.placeholder = t('addFeedUrl');
+  const managerAdd = document.getElementById('feed-manager-add-button');
+  if (managerAdd) managerAdd.setAttribute('aria-label', state.lang === 'ar' ? 'أضف الخلاصة' : 'Add feed');
+  const managerSearch = document.getElementById('feed-manager-search');
+  if (managerSearch) managerSearch.placeholder = state.lang === 'ar' ? 'ابحث في كل الخلاصات' : 'Search all feeds';
+  const mobileHome = document.getElementById('mobile-home');
+  if (mobileHome) mobileHome.setAttribute('aria-label', state.lang === 'ar' ? 'الرئيسية' : 'Home');
+  const mobileMenuRows = document.querySelectorAll('.mobile-menu-row > span:first-child');
+  if (mobileMenuRows[0]) mobileMenuRows[0].textContent = state.lang === 'ar' ? 'اللغة' : 'Language';
+  if (mobileMenuRows[1]) mobileMenuRows[1].textContent = state.lang === 'ar' ? 'المظهر' : 'Appearance';
 
-  const catchUpBtn = document.getElementById('catch-me-up');
-  if (catchUpBtn) catchUpBtn.textContent = t('catchMeUp');
+  for (const id of ['catch-me-up', 'mobile-catch-me-up']) {
+    const catchUpBtn = document.getElementById(id);
+    if (catchUpBtn) setAiLabel(catchUpBtn, t('catchMeUp'));
+  }
 
-  const langBtn = document.getElementById('lang-toggle');
-  if (langBtn) {
-    langBtn.textContent = t('langToggle');
+  for (const id of ['lang-toggle', 'mobile-lang-toggle']) {
+    const langBtn = document.getElementById(id);
+    if (!langBtn) continue;
+    if (id === 'lang-toggle') langBtn.textContent = t('langToggle');
     langBtn.title = t('switchLanguage');
+  }
+  const mobileLanguageValue = document.getElementById('mobile-language-value');
+  if (mobileLanguageValue) mobileLanguageValue.textContent = state.lang === 'ar' ? 'التبديل إلى English' : 'Switch to العربية';
+  const mobileThemeValue = document.getElementById('mobile-theme-value');
+  if (mobileThemeValue) {
+    mobileThemeValue.textContent = state.lang === 'ar'
+      ? (state.theme === 'dark' ? 'التبديل إلى الفاتح' : 'التبديل إلى الداكن')
+      : (state.theme === 'dark' ? 'Switch to Light' : 'Switch to Dark');
   }
 
   const closeBtn = document.getElementById('modal-close');
@@ -282,6 +399,7 @@ function applyLanguage(lang, rerender) {
   if (rerender) {
     renderSidebar();
     renderCards();
+    if (window.location.pathname === '/manage-feeds') renderFeedManager();
   }
 }
 
@@ -292,14 +410,17 @@ function resetDailyBrief() {
   state.dailyBrief.error = '';
   state.dailyBrief.collapsed = false;
   state.dailyBrief.spotlightSection = null;
+  state.dailyBrief.sourceSection = null;
   state.dailyBrief.language = null;
 }
 
 function updateDailyBriefButton() {
-  const button = document.getElementById('catch-me-up');
-  if (!button) return;
-  button.disabled = state.dailyBrief.status === 'loading';
-  button.textContent = t('catchMeUp');
+  for (const id of ['catch-me-up', 'mobile-catch-me-up']) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    button.disabled = state.dailyBrief.status === 'loading';
+    setAiLabel(button, t('catchMeUp'));
+  }
 }
 
 function todayUtcRange() {
@@ -322,6 +443,7 @@ async function generateDailyBrief(regenerate) {
   if (!regenerate && brief.data && brief.language === state.lang) {
     brief.collapsed = false;
     brief.spotlightSection = null;
+    brief.sourceSection = null;
     brief.status = 'success';
     renderCards();
     scrollToDailyBrief();
@@ -339,6 +461,7 @@ async function generateDailyBrief(regenerate) {
   brief.error = '';
   brief.collapsed = false;
   brief.spotlightSection = null;
+  brief.sourceSection = null;
   brief.language = requestLanguage;
   updateDailyBriefButton();
   renderCards();
@@ -446,7 +569,7 @@ function renderDailyBriefCard() {
     errorState.className = 'daily-brief-state daily-brief-error-content';
     const text = document.createElement('div');
     const title = document.createElement('strong');
-    title.textContent = t('briefTitle');
+    setAiLabel(title, t('briefDisplayTitle'));
     const detail = document.createElement('p');
     detail.textContent = briefState.error || t('briefFailed');
     text.append(title, detail);
@@ -475,19 +598,18 @@ function renderDailyBriefCard() {
     expand.setAttribute('aria-expanded', 'false');
     expand.setAttribute('aria-label', t('expandBrief'));
 
-    const sparkle = document.createElement('span');
-    sparkle.setAttribute('aria-hidden', 'true');
-    sparkle.textContent = '\u2728';
+    const aiBadge = createAiBadge();
     const compactTitle = document.createElement('strong');
-    compactTitle.textContent = t('briefTitle').replace(/^\u2728\s*/, '');
+    compactTitle.textContent = t('briefDisplayTitle');
     const chevron = document.createElement('span');
     chevron.className = 'daily-brief-chevron';
     chevron.setAttribute('aria-hidden', 'true');
     chevron.textContent = '\u25be';
-    expand.append(sparkle, compactTitle, chevron);
+    expand.append(aiBadge, compactTitle, chevron);
     expand.addEventListener('click', () => {
       briefState.collapsed = false;
       briefState.spotlightSection = null;
+      briefState.sourceSection = null;
       renderCards();
       scrollToDailyBrief();
     });
@@ -506,6 +628,7 @@ function renderDailyBriefCard() {
       category.setAttribute('aria-controls', 'daily-brief-spotlight');
       category.addEventListener('click', () => {
         briefState.spotlightSection = isActive ? null : sectionIndex;
+        briefState.sourceSection = null;
         renderCards();
       });
       categories.appendChild(category);
@@ -528,7 +651,22 @@ function renderDailyBriefCard() {
       eyebrow.textContent = t('categorySpotlight');
       const sectionTitle = document.createElement('h3');
       sectionTitle.textContent = spotlightSection.title;
-      spotlightHeading.append(eyebrow, sectionTitle);
+      const spotlightTitleRow = document.createElement('div');
+      spotlightTitleRow.className = 'daily-brief-spotlight-title-row';
+      spotlightTitleRow.appendChild(sectionTitle);
+      const sourcesExpanded = briefState.sourceSection === briefState.spotlightSection;
+      const sourceButton = createSourceButton(
+        spotlightSection,
+        briefState.spotlightSection,
+        sourcesExpanded);
+      if (sourceButton) {
+        sourceButton.addEventListener('click', () => {
+          briefState.sourceSection = sourcesExpanded ? null : briefState.spotlightSection;
+          renderCards();
+        });
+        spotlightTitleRow.appendChild(sourceButton);
+      }
+      spotlightHeading.append(eyebrow, spotlightTitleRow);
 
       const closeSpotlight = document.createElement('button');
       closeSpotlight.type = 'button';
@@ -537,6 +675,7 @@ function renderDailyBriefCard() {
       closeSpotlight.textContent = '\u00d7';
       closeSpotlight.addEventListener('click', () => {
         briefState.spotlightSection = null;
+        briefState.sourceSection = null;
         renderCards();
       });
       spotlightHeader.append(spotlightHeading, closeSpotlight);
@@ -558,11 +697,16 @@ function renderDailyBriefCard() {
       openFull.addEventListener('click', () => {
         briefState.collapsed = false;
         briefState.spotlightSection = null;
+        briefState.sourceSection = null;
         renderCards();
         scrollToDailyBrief();
       });
 
-      spotlight.append(spotlightHeader, points, openFull);
+      spotlight.append(spotlightHeader, points);
+      if (sourcesExpanded) {
+        spotlight.appendChild(createSourcesPanel(spotlightSection, briefState.spotlightSection));
+      }
+      spotlight.appendChild(openFull);
       card.appendChild(spotlight);
     }
     return card;
@@ -572,7 +716,7 @@ function renderDailyBriefCard() {
   header.className = 'daily-brief-header';
   const headingGroup = document.createElement('div');
   const title = document.createElement('h2');
-  title.textContent = t('briefTitle');
+  setAiLabel(title, t('briefDisplayTitle'));
   const subtitle = document.createElement('p');
   subtitle.textContent = tf('generatedFrom', {
     articles: brief.articleCount,
@@ -596,6 +740,7 @@ function renderDailyBriefCard() {
   collapse.addEventListener('click', () => {
     briefState.collapsed = true;
     briefState.spotlightSection = null;
+    briefState.sourceSection = null;
     renderCards();
   });
   header.append(headingGroup, collapse);
@@ -606,17 +751,30 @@ function renderDailyBriefCard() {
   introduction.className = 'daily-brief-introduction';
   introduction.textContent = brief.introduction;
   body.appendChild(introduction);
-  for (const section of brief.sections || []) {
+  for (const [sectionIndex, section] of (brief.sections || []).entries()) {
     const sectionElement = document.createElement('section');
+    const sectionHeading = document.createElement('div');
+    sectionHeading.className = 'daily-brief-section-heading';
     const sectionTitle = document.createElement('h3');
     sectionTitle.textContent = section.title;
+    sectionHeading.appendChild(sectionTitle);
+    const sourcesExpanded = briefState.sourceSection === sectionIndex;
+    const sourceButton = createSourceButton(section, sectionIndex, sourcesExpanded);
+    if (sourceButton) {
+      sourceButton.addEventListener('click', () => {
+        briefState.sourceSection = sourcesExpanded ? null : sectionIndex;
+        renderCards();
+      });
+      sectionHeading.appendChild(sourceButton);
+    }
     const bullets = document.createElement('ul');
     for (const bullet of section.bullets || []) {
       const item = document.createElement('li');
       item.textContent = bullet;
       bullets.appendChild(item);
     }
-    sectionElement.append(sectionTitle, bullets);
+    sectionElement.append(sectionHeading, bullets);
+    if (sourcesExpanded) sectionElement.appendChild(createSourcesPanel(section, sectionIndex));
     body.appendChild(sectionElement);
   }
 
@@ -684,6 +842,7 @@ async function loadAll() {
   markNew(state.articles);
   renderSidebar(); // refresh badge counts now that articles are in
   renderCards();
+  if (window.location.pathname === '/manage-feeds') renderFeedManager();
 }
 async function reloadArticles() {
   renderSkeleton();
@@ -696,20 +855,184 @@ async function reloadArticles() {
 // ---------- sidebar ----------
 function renderSidebar() {
   const nav = document.getElementById('feed-nav');
-  const toggle = document.getElementById('feed-toggle');
-  const label = document.getElementById('feed-toggle-label');
-  const icon = document.getElementById('feed-toggle-icon');
-
-  label.textContent = t('feeds') + ' (' + state.feeds.length + ')';
-  icon.textContent = state.feedsCollapsed ? '+' : '-';
-  toggle.setAttribute('aria-expanded', String(!state.feedsCollapsed));
-  nav.classList.toggle('collapsed', state.feedsCollapsed);
+  const search = document.getElementById('sidebar-feed-search');
+  const query = search.value.trim().toLocaleLowerCase();
+  const recent = recentFeedIds.map(feedById).filter(Boolean);
+  const ordered = [...recent, ...state.feeds.filter(feed => !recentFeedIds.includes(feed.id))];
+  const visible = (query
+    ? ordered.filter(feed => feed.name.toLocaleLowerCase().includes(query))
+    : ordered
+  ).slice(0, query ? 10 : 6);
 
   nav.innerHTML = '';
   nav.appendChild(navItem('all', t('allFeeds'), state.articles.length, null));
-  for (const feed of state.feeds) {
-    nav.appendChild(navItem(feed.id, feed.name, countFor(feed.id), feed));
+  if (visible.length) {
+    const sectionLabel = document.createElement('p');
+    sectionLabel.className = 'sidebar-feed-label';
+    sectionLabel.textContent = query
+      ? (state.lang === 'ar' ? 'نتائج البحث' : 'Search results')
+      : (state.lang === 'ar' ? 'الخلاصات الأخيرة' : 'Recent feeds');
+    nav.appendChild(sectionLabel);
   }
+  for (const feed of visible) nav.appendChild(navItem(feed.id, feed.name, countFor(feed.id), feed));
+  if (query && !visible.length) {
+    const empty = document.createElement('p');
+    empty.className = 'sidebar-feed-label';
+    empty.textContent = state.lang === 'ar' ? 'لا توجد خلاصات مطابقة' : 'No matching feeds';
+    nav.appendChild(empty);
+  }
+  updateSidebarRefreshLabel();
+  renderQuickFeeds();
+}
+
+function updateSidebarRefreshLabel() {
+  const button = document.getElementById('refresh-all');
+  if (!button || button.disabled) return;
+  button.textContent = '⟳ ' + t(state.selected === 'all' ? 'refreshAll' : 'refreshFeed');
+}
+
+function rememberFeed(key) {
+  if (key === 'all') return;
+  recentFeedIds = [key, ...recentFeedIds.filter(id => id !== key)].slice(0, 8);
+  try { localStorage.setItem('rss-recent-feeds', JSON.stringify(recentFeedIds)); } catch { /* ignore */ }
+}
+
+function renderQuickFeeds() {
+  const list = document.getElementById('mobile-quick-feeds');
+  const search = document.getElementById('mobile-feed-search');
+  if (!list || !search) return;
+  const query = search.value.trim().toLocaleLowerCase();
+  const recent = recentFeedIds.map(feedById).filter(Boolean);
+  const ordered = [...recent, ...state.feeds.filter(feed => !recentFeedIds.includes(feed.id))];
+  const visible = (query
+    ? ordered.filter(feed => feed.name.toLocaleLowerCase().includes(query))
+    : ordered
+  ).slice(0, query ? 8 : 5);
+
+  list.innerHTML = '';
+  if (!query || t('allFeeds').toLocaleLowerCase().includes(query)) {
+    list.appendChild(quickFeedButton('all', t('allFeeds'), state.articles.length));
+  }
+  if (visible.length) {
+    const label = document.createElement('p');
+    label.className = 'mobile-quick-feeds-label';
+    label.textContent = query
+      ? (state.lang === 'ar' ? 'نتائج البحث' : 'Search results')
+      : (state.lang === 'ar' ? 'الخلاصات الأخيرة' : 'Recent feeds');
+    list.appendChild(label);
+  }
+  for (const feed of visible) list.appendChild(quickFeedButton(feed.id, feed.name, countFor(feed.id)));
+  if (!list.children.length) {
+    const empty = document.createElement('p');
+    empty.className = 'state';
+    empty.textContent = state.lang === 'ar' ? 'لا توجد خلاصات مطابقة.' : 'No matching feeds.';
+    list.appendChild(empty);
+  }
+}
+
+function quickFeedButton(key, label, count) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mobile-quick-feed' + (state.selected === key ? ' active' : '');
+  const name = document.createElement('span');
+  name.className = 'mobile-quick-feed-name';
+  name.dir = 'auto';
+  name.textContent = label;
+  const total = document.createElement('span');
+  total.className = 'mobile-quick-feed-count';
+  total.textContent = count;
+  button.append(name, total);
+  button.addEventListener('click', () => {
+    setMobileFeedsOpen(false);
+    selectFeedAndScroll(key);
+  });
+  return button;
+}
+
+function renderFeedManager() {
+  const list = document.getElementById('feed-manager-list');
+  const search = document.getElementById('feed-manager-search');
+  if (!list || !search) return;
+  const query = search.value.trim().toLocaleLowerCase();
+  const feeds = state.feeds.filter(feed =>
+    !query || feed.name.toLocaleLowerCase().includes(query) || (feed.url || '').toLocaleLowerCase().includes(query)
+  );
+  list.innerHTML = '';
+  for (const feed of feeds) {
+    const item = document.createElement('div');
+    item.className = 'feed-manager-item';
+    if (hasRtlText(feed.name)) item.classList.add('rtl-feed');
+
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'feed-manager-open';
+    const name = document.createElement('span');
+    name.className = 'feed-manager-name';
+    name.dir = 'auto';
+    name.textContent = feed.name;
+    open.append(name);
+    open.addEventListener('click', () => {
+      selectFeedAndScroll(feed.id);
+      navigateToReader();
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'feed-manager-actions';
+    const count = document.createElement('span');
+    count.className = 'feed-manager-count';
+    count.textContent = countFor(feed.id);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'feed-manager-delete';
+    remove.setAttribute('aria-label', state.lang === 'ar' ? 'حذف' : 'Delete');
+    remove.title = state.lang === 'ar' ? 'حذف' : 'Delete';
+    remove.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
+    remove.addEventListener('click', async () => {
+      if (!confirm(t('removeFeedConfirm').replace('{name}', feed.name))) {
+        remove.blur();
+        return;
+      }
+      remove.disabled = true;
+      await api.deleteFeed(feed.id);
+      if (state.selected === feed.id) state.selected = 'all';
+      await loadAll();
+      renderFeedManager();
+    });
+    actions.append(count, remove);
+    item.append(open, actions);
+    list.appendChild(item);
+  }
+  if (!feeds.length) {
+    const empty = document.createElement('p');
+    empty.className = 'state';
+    empty.textContent = state.lang === 'ar' ? 'لا توجد خلاصات مطابقة.' : 'No matching feeds.';
+    list.appendChild(empty);
+  }
+}
+
+function applyRoute() {
+  const managing = window.location.pathname === '/manage-feeds';
+  document.body.classList.toggle('managing-feeds', managing);
+  document.getElementById('feed-manager').hidden = !managing;
+  if (managing) {
+    setMobileFeedsOpen(false);
+    setMobileMoreOpen(false);
+    setMobileSearchOpen(false);
+    renderFeedManager();
+    window.scrollTo({ top: 0 });
+  }
+}
+
+function navigateToManager() {
+  history.pushState({}, '', '/manage-feeds');
+  applyRoute();
+}
+
+function navigateToReader() {
+  history.pushState({}, '', '/');
+  applyRoute();
+  showMobileHeader();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function navItem(key, label, count, feed) {
@@ -726,35 +1049,6 @@ function navItem(key, label, count, feed) {
   const meta = document.createElement('span');
   meta.className = 'nav-meta';
 
-  // Icons first (appear on hover, to the LEFT of the badge) ...
-  if (feed) {
-    const refresh = document.createElement('button');
-    refresh.className = 'nav-refresh';
-    refresh.title = t('refreshFeed');
-    refresh.textContent = '⟳';
-    refresh.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      refresh.disabled = true;
-      await api.refreshFeed(feed.id);
-      await reloadArticles();
-    });
-    meta.appendChild(refresh);
-
-    const del = document.createElement('button');
-    del.className = 'nav-del';
-    del.title = t('removeFeed');
-    del.textContent = '🗑';
-    del.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!confirm(t('removeFeedConfirm').replace('{name}', feed.name))) return;
-      await api.deleteFeed(feed.id);
-      if (state.selected === feed.id) state.selected = 'all';
-      await loadAll();
-    });
-    meta.appendChild(del);
-  }
-
-  // ... badge last, pinned to the far right.
   const badge = document.createElement('span');
   badge.className = 'nav-badge';
   badge.textContent = count;
@@ -762,9 +1056,7 @@ function navItem(key, label, count, feed) {
 
   item.append(name, meta);
   item.addEventListener('click', () => {
-    state.selected = key;
-    renderSidebar();
-    renderCards();
+    selectFeedAndScroll(key);
   });
   return item;
 }
@@ -824,17 +1116,20 @@ function renderCards() {
   if (total === 0) {
     const empty = document.createElement('p');
     empty.className = 'state';
-    empty.textContent = state.search ? t('noArticlesMatch') : t('noArticlesYet');
+    empty.textContent = state.search
+      ? t('noArticlesMatch')
+      : t(state.selected === 'all' ? 'noArticlesYet' : 'noArticlesInFeed');
     cards.appendChild(empty);
     return;
   }
 
-  for (const a of list) cards.appendChild(renderCard(a));
+  list.forEach((article, index) => cards.appendChild(renderCard(article, index === 0)));
 }
 
-function renderCard(a) {
+function renderCard(a, featured) {
   const card = document.createElement('article');
-  card.className = 'card';
+  card.className = 'card article-card';
+  if (featured) card.classList.add('featured-article');
   const cardMain = document.createElement('div');
   cardMain.className = 'card-main';
   const isRtlArticle = hasRtlText(a.title || a.sourceFeedName || a.summary);
@@ -852,17 +1147,22 @@ function renderCard(a) {
     if (showSource && hasRtlText(a.sourceFeedName)) head.classList.add('rtl-meta');
     if (showSource && !hasRtlText(a.sourceFeedName)) head.classList.add('ltr-meta');
     if (showSource) {
-      const src = document.createElement('span');
+      const src = document.createElement('button');
+      src.type = 'button';
       src.className = 'card-source';
       src.dir = 'auto';
       src.textContent = a.sourceFeedName;
+      src.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectFeedAndScroll(a.sourceFeedId);
+      });
       head.appendChild(src);
     }
     if (showDate) {
       if (showSource) {
         const separator = document.createElement('span');
         separator.className = 'card-meta-separator';
-        separator.textContent = '/';
+        separator.textContent = '•';
         head.appendChild(separator);
       }
       const t = document.createElement('span');
@@ -884,7 +1184,6 @@ function renderCard(a) {
     badge.textContent = t('new');
     title.appendChild(badge);
   }
-  title.addEventListener('click', () => openArticle(a));
   cardText.appendChild(title);
 
   if (state.fields.author && a.author) {
@@ -902,18 +1201,11 @@ function renderCard(a) {
     cardText.appendChild(excerpt);
   }
 
-  const actions = document.createElement('div');
-  actions.className = 'card-actions';
-  const expand = document.createElement('button');
-  expand.className = 'card-icon';
-  expand.title = t('openFullArticle');
-  expand.textContent = '↗';
-  expand.addEventListener('click', () => openArticle(a));
-  actions.appendChild(expand);
-  cardText.appendChild(actions);
-
   const imageUrl = safeHref(a.imageUrl);
   if (imageUrl) {
+    card.classList.add('has-image');
+    const wrap = document.createElement('div');
+    wrap.className = 'card-image-wrap';
     const image = document.createElement('img');
     image.className = 'card-image';
     image.src = imageUrl;
@@ -921,11 +1213,16 @@ function renderCard(a) {
     image.loading = 'lazy';
     image.decoding = 'async';
     image.referrerPolicy = 'no-referrer';
-    image.addEventListener('error', () => image.remove());
-    cardMain.appendChild(image);
+    image.addEventListener('error', () => {
+      wrap.remove();
+      card.classList.remove('has-image');
+    });
+    wrap.appendChild(image);
+    cardMain.appendChild(wrap);
   }
   cardMain.appendChild(cardText);
   card.appendChild(cardMain);
+  card.addEventListener('click', () => openArticle(a));
 
   return card;
 }
@@ -1003,73 +1300,344 @@ function updateScrollTopButton() {
   btn.classList.toggle('visible', visible);
 }
 
-// ---------- events ----------
-document.getElementById('add-feed-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const input = document.getElementById('feed-url');
-  const errEl = document.getElementById('add-error');
-  const submitBtn = document.getElementById('add-submit');
-  errEl.hidden = true;
-
-  const url = input.value.trim();
-  if (!url) return;
-
-  submitBtn.disabled = true;
-  const res = await api.addFeed(url);
-  submitBtn.disabled = false;
-
-  if (res.ok) {
-    input.value = '';
-    await loadAll();
+let mobileHeaderScrollAnchor = window.scrollY;
+function showMobileHeader() {
+  const header = document.getElementById('mobile-header');
+  if (header) header.classList.remove('mobile-header-hidden');
+}
+function mobileSearchIsOpen() {
+  const panel = document.getElementById('mobile-search-panel');
+  return Boolean(panel && !panel.hidden);
+}
+function mobileMoreIsOpen() {
+  const menu = document.getElementById('mobile-more-menu');
+  return Boolean(menu && !menu.hidden);
+}
+function mobileFeedsIsOpen() {
+  const panel = document.getElementById('mobile-feeds-panel');
+  return Boolean(panel && !panel.hidden);
+}
+function setMobileFeedsOpen(open) {
+  const panel = document.getElementById('mobile-feeds-panel');
+  const toggle = document.getElementById('mobile-feeds-link');
+  const search = document.getElementById('mobile-feed-search');
+  if (!panel || !toggle || !search) return;
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  if (open) {
+    setMobileMoreOpen(false);
+    setMobileSearchOpen(false);
+    renderQuickFeeds();
+    showMobileHeader();
+    requestAnimationFrame(() => search.focus());
   } else {
-    let msg = t('couldNotAddFeed');
-    try { msg = await res.json(); } catch { try { msg = await res.text(); } catch { /* ignore */ } }
-    errEl.textContent = localizeFeedError((typeof msg === 'string' && msg) ? msg : t('couldNotAddFeed'));
-    errEl.hidden = false;
+    search.value = '';
   }
-});
+}
+function setMobileMoreOpen(open) {
+  const menu = document.getElementById('mobile-more-menu');
+  const toggle = document.getElementById('mobile-more-toggle');
+  if (!menu || !toggle) return;
+  menu.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  if (open) {
+    setMobileSearchOpen(false);
+    showMobileHeader();
+  }
+}
+function setMobileSearchOpen(open) {
+  const panel = document.getElementById('mobile-search-panel');
+  const toggle = document.getElementById('mobile-search-toggle');
+  const input = document.getElementById('mobile-search');
+  if (!panel || !toggle || !input) return;
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  if (open) {
+    showMobileHeader();
+    requestAnimationFrame(() => input.focus());
+  }
+}
+function updateMobileHeaderOnScroll() {
+  if (window.innerWidth > 768) {
+    showMobileHeader();
+    mobileHeaderScrollAnchor = window.scrollY;
+    return;
+  }
+
+  const currentY = Math.max(0, window.scrollY);
+  if (currentY < 24 || mobileSearchIsOpen() || mobileMoreIsOpen() || mobileFeedsIsOpen()) {
+    showMobileHeader();
+    mobileHeaderScrollAnchor = currentY;
+    return;
+  }
+
+  const delta = currentY - mobileHeaderScrollAnchor;
+  if (Math.abs(delta) < 12) return;
+  document.getElementById('mobile-header')?.classList.toggle('mobile-header-hidden', delta > 0);
+  mobileHeaderScrollAnchor = currentY;
+}
+
+let refreshAllPromise = null;
+const feedRefreshPromises = new Map();
+function refreshAllArticles() {
+  if (refreshAllPromise) return refreshAllPromise;
+  refreshAllPromise = (async () => {
+    await api.refreshAll();
+    await reloadArticles();
+  })().finally(() => {
+    refreshAllPromise = null;
+  });
+  return refreshAllPromise;
+}
+
+function refreshSelection(key) {
+  if (key === 'all') return refreshAllArticles();
+  if (feedRefreshPromises.has(key)) return feedRefreshPromises.get(key);
+  const promise = (async () => {
+    await api.refreshFeed(key);
+    await reloadArticles();
+  })().finally(() => feedRefreshPromises.delete(key));
+  feedRefreshPromises.set(key, promise);
+  return promise;
+}
+
+function selectFeedAndScroll(key) {
+  state.selected = key;
+  rememberFeed(key);
+  renderSidebar();
+  renderCards();
+  showMobileHeader();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const pullRefresh = document.getElementById('pull-refresh');
+let pullRefreshStartY = 0;
+let pullRefreshTracking = false;
+let pullRefreshArmed = false;
+
+function resetPullRefresh() {
+  pullRefreshTracking = false;
+  pullRefreshArmed = false;
+  pullRefresh.classList.remove('visible', 'armed');
+  pullRefresh.classList.add('settling');
+  pullRefresh.style.setProperty('--pull-distance', '0px');
+  pullRefresh.style.setProperty('--pull-rotation', '0deg');
+  window.setTimeout(() => pullRefresh.classList.remove('settling'), 190);
+}
+
+function canStartPullRefresh(event) {
+  if (window.innerWidth > 768 || window.scrollY > 0 || refreshAllPromise) return false;
+  if (mobileSearchIsOpen()) return false;
+  return !event.target.closest('input, textarea, select, button, a');
+}
+
+document.addEventListener('touchstart', (event) => {
+  if (event.touches.length !== 1 || !canStartPullRefresh(event)) return;
+  pullRefreshStartY = event.touches[0].clientY;
+  pullRefreshTracking = true;
+  pullRefreshArmed = false;
+}, { passive: true });
+
+document.addEventListener('touchmove', (event) => {
+  if (!pullRefreshTracking || event.touches.length !== 1) return;
+  const distance = event.touches[0].clientY - pullRefreshStartY;
+  if (distance <= 0 || window.scrollY > 0) {
+    resetPullRefresh();
+    return;
+  }
+
+  event.preventDefault();
+  const visualDistance = Math.min(96, distance * 0.72);
+  pullRefreshArmed = distance >= 72;
+  pullRefresh.classList.add('visible');
+  pullRefresh.classList.toggle('armed', pullRefreshArmed);
+  pullRefresh.style.setProperty('--pull-distance', `${visualDistance}px`);
+  pullRefresh.style.setProperty('--pull-rotation', `${Math.min(300, distance * 3)}deg`);
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+  if (!pullRefreshTracking) return;
+  const shouldRefresh = pullRefreshArmed;
+  pullRefreshTracking = false;
+  pullRefreshArmed = false;
+  if (!shouldRefresh) {
+    resetPullRefresh();
+    return;
+  }
+
+  showMobileHeader();
+  pullRefresh.classList.remove('armed');
+  pullRefresh.classList.add('refreshing');
+  refreshSelection(state.selected).catch(() => {
+    // Keep displaying cached articles if a feed cannot be refreshed.
+  }).finally(() => {
+    pullRefresh.classList.remove('refreshing');
+    resetPullRefresh();
+  });
+}, { passive: true });
+
+document.addEventListener('touchcancel', resetPullRefresh, { passive: true });
+
+// ---------- events ----------
+document.getElementById('sidebar-feed-search').addEventListener('input', renderSidebar);
+document.getElementById('sidebar-manage-feeds').addEventListener('click', navigateToManager);
 
 document.getElementById('refresh-all').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
+  const selected = state.selected;
   btn.disabled = true;
-  btn.textContent = '⟳ ' + t('refreshing');
-  await api.refreshAll();
-  await reloadArticles();
-  btn.textContent = '⟳ ' + t('refreshAll');
-  btn.disabled = false;
-});
-
-document.getElementById('feed-toggle').addEventListener('click', () => {
-  state.feedsCollapsed = !state.feedsCollapsed;
-  renderSidebar();
+  btn.textContent = '⟳ ' + t(selected === 'all' ? 'refreshingAll' : 'refreshingFeed');
+  try {
+    await refreshSelection(selected);
+  } catch {
+    // Keep displaying cached articles if refreshing fails.
+  } finally {
+    btn.disabled = false;
+    updateSidebarRefreshLabel();
+  }
 });
 
 document.getElementById('search').addEventListener('input', (e) => {
   state.search = e.target.value;
+  document.getElementById('mobile-search').value = state.search;
   renderCards();
 });
 
+document.getElementById('mobile-search-toggle').addEventListener('click', () => {
+  setMobileMoreOpen(false);
+  setMobileFeedsOpen(false);
+  setMobileSearchOpen(!mobileSearchIsOpen());
+});
+
+document.getElementById('mobile-more-toggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setMobileFeedsOpen(false);
+  setMobileMoreOpen(!mobileMoreIsOpen());
+});
+
+document.getElementById('mobile-feeds-link').addEventListener('click', () => {
+  setMobileFeedsOpen(!mobileFeedsIsOpen());
+});
+
+document.getElementById('mobile-feed-search').addEventListener('input', renderQuickFeeds);
+document.getElementById('mobile-manage-feeds').addEventListener('click', () => {
+  setMobileFeedsOpen(false);
+  navigateToManager();
+});
+
+document.getElementById('feed-manager-back').addEventListener('click', navigateToReader);
+document.getElementById('feed-manager-search').addEventListener('input', renderFeedManager);
+document.getElementById('feed-manager-url').addEventListener('input', function () {
+  document.getElementById('feed-manager-add-button').hidden = !this.value.trim();
+});
+window.addEventListener('popstate', applyRoute);
+
+document.getElementById('feed-manager-add-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('feed-manager-url');
+  const button = document.getElementById('feed-manager-add-button');
+  const error = document.getElementById('feed-manager-error');
+  const url = input.value.trim();
+  if (!url) return;
+  error.hidden = true;
+  button.disabled = true;
+  const response = await api.addFeed(url);
+  button.disabled = false;
+  if (response.ok) {
+    input.value = '';
+    button.hidden = true;
+    await loadAll();
+    renderFeedManager();
+    return;
+  }
+  let message = t('couldNotAddFeed');
+  try { message = await response.json(); } catch { try { message = await response.text(); } catch { /* ignore */ } }
+  error.textContent = localizeFeedError((typeof message === 'string' && message) ? message : t('couldNotAddFeed'));
+  error.hidden = false;
+});
+
+document.getElementById('mobile-home').addEventListener('click', async () => {
+  if (window.location.pathname === '/manage-feeds') {
+    navigateToReader();
+    return;
+  }
+  setMobileMoreOpen(false);
+  setMobileSearchOpen(false);
+  showMobileHeader();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const button = document.getElementById('mobile-home');
+  button.disabled = true;
+  try {
+    await refreshSelection(state.selected);
+  } catch {
+    // Keep displaying cached articles if a feed cannot be refreshed.
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById('mobile-search').addEventListener('input', (e) => {
+  state.search = e.target.value;
+  document.getElementById('search').value = state.search;
+  renderCards();
+  if (!state.search) setMobileSearchOpen(false);
+});
+
 document.getElementById('catch-me-up').addEventListener('click', () => {
+  generateDailyBrief(false);
+});
+document.getElementById('mobile-catch-me-up').addEventListener('click', () => {
   generateDailyBrief(false);
 });
 
 document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
+document.getElementById('mobile-theme-toggle').addEventListener('click', () => {
+  applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+  setMobileMoreOpen(false);
+});
 
 document.getElementById('lang-toggle').addEventListener('click', () => {
   applyLanguage(state.lang === 'ar' ? 'en' : 'ar', true);
 });
+document.getElementById('mobile-lang-toggle').addEventListener('click', () => {
+  applyLanguage(state.lang === 'ar' ? 'en' : 'ar', true);
+  setMobileMoreOpen(false);
+});
 
 document.getElementById('scroll-top').addEventListener('click', () => {
+  showMobileHeader();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  refreshSelection(state.selected).catch(() => { /* retain cached articles when refresh fails */ });
 });
 
 window.addEventListener('scroll', updateScrollTopButton, { passive: true });
+window.addEventListener('scroll', updateMobileHeaderOnScroll, { passive: true });
+window.addEventListener('resize', updateMobileHeaderOnScroll, { passive: true });
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-backdrop').addEventListener('click', closeModal);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  closeModal();
+  if (mobileSearchIsOpen()) setMobileSearchOpen(false);
+  if (mobileMoreIsOpen()) setMobileMoreOpen(false);
+  if (mobileFeedsIsOpen()) setMobileFeedsOpen(false);
+});
+
+document.addEventListener('click', (e) => {
+  if (mobileMoreIsOpen()) {
+    const menu = document.getElementById('mobile-more-menu');
+    const toggle = document.getElementById('mobile-more-toggle');
+    if (!menu.contains(e.target) && !toggle.contains(e.target)) setMobileMoreOpen(false);
+  }
+  if (mobileFeedsIsOpen()) {
+    const panel = document.getElementById('mobile-feeds-panel');
+    const toggle = document.getElementById('mobile-feeds-link');
+    if (!panel.contains(e.target) && !toggle.contains(e.target)) setMobileFeedsOpen(false);
+  }
+});
 
 // ---------- init ----------
 (function init() {
@@ -1080,6 +1648,6 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal
   applyTheme(theme);
   applyLanguage(lang, false);
   updateScrollTopButton();
-
+  applyRoute();
   loadAll();
 })();

@@ -21,4 +21,12 @@ public sealed class DailyBriefSection
 {
     public string Title { get; set; } = "";
     public List<string> Bullets { get; set; } = [];
+    public List<DailyBriefSource> Sources { get; set; } = [];
+}
+
+public sealed class DailyBriefSource
+{
+    public string Title { get; set; } = "";
+    public string SourceName { get; set; } = "";
+    public string Url { get; set; } = "";
 }
