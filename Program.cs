@@ -16,6 +16,9 @@ builder.Services.AddScoped<FeedArticleService>();
 builder.Services.AddSingleton<ArticleCache>();
 builder.Services.AddSingleton<HtmlContentSanitizer>();
 builder.Services.AddSingleton<DailyBriefCache>();
+builder.Services.Configure<DailyBriefRateLimitOptions>(
+    builder.Configuration.GetSection(DailyBriefRateLimitOptions.SectionName));
+builder.Services.AddSingleton<DailyBriefRateLimitService>();
 builder.Services.AddHttpClient<DailyBriefService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["DeepSeek:BaseUrl"] ?? "https://api.deepseek.com/");
@@ -166,6 +169,8 @@ app.MapPost("/daily-brief", async (
     ArticleCache articleCache,
     DailyBriefService briefService,
     DailyBriefCache briefCache,
+    DailyBriefRateLimitService rateLimitService,
+    HttpContext httpContext,
     ILogger<Program> logger,
     CancellationToken ct) =>
 {
@@ -173,6 +178,7 @@ app.MapPost("/daily-brief", async (
     var dayStartUtc = request.DayStartUtc.ToUniversalTime();
     var dayEndUtc = request.DayEndUtc.ToUniversalTime();
     var dayLength = dayEndUtc - dayStartUtc;
+    var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     // Browser-local calendar days can be 23 or 25 hours around daylight-saving changes.
     if (dayLength < TimeSpan.FromHours(20) || dayLength > TimeSpan.FromHours(26))
@@ -186,7 +192,10 @@ app.MapPost("/daily-brief", async (
     {
         var cachedBrief = briefCache.Get(dayStartUtc, dayEndUtc, language);
         if (cachedBrief is not null)
+        {
+            ApplyRateLimitHeaders(httpContext.Response, rateLimitService.GetStatus(clientIp));
             return Results.Ok(cachedBrief);
+        }
     }
 
     var feeds = await storage.LoadAsync();
@@ -217,37 +226,72 @@ app.MapPost("/daily-brief", async (
     if (todaysArticles.Count == 0)
         return Results.NotFound(new { error = "No articles were published today." });
 
+    DailyBriefLimitResult? acquiredLimit = null;
+    if (request.Regenerate)
+    {
+        acquiredLimit = rateLimitService.TryAcquireRegeneration(clientIp);
+        ApplyRateLimitHeaders(httpContext.Response, acquiredLimit);
+        if (!acquiredLimit.Allowed)
+            return RateLimitExceeded(httpContext.Response, acquiredLimit);
+    }
+
+    await rateLimitService.GenerationLock.WaitAsync(ct);
     try
     {
-        var brief = await briefService.GenerateAsync(todaysArticles, language, ct);
-        briefCache.Set(dayStartUtc, dayEndUtc, language, brief);
-        return Results.Ok(brief);
+        // A second first-generation request may have arrived while the first was running.
+        // Recheck the cache after entering the generation lock so it can reuse that result.
+        if (!request.Regenerate)
+        {
+            var cachedBrief = briefCache.Get(dayStartUtc, dayEndUtc, language);
+            if (cachedBrief is not null)
+            {
+                ApplyRateLimitHeaders(httpContext.Response, rateLimitService.GetStatus(clientIp));
+                return Results.Ok(cachedBrief);
+            }
+
+            acquiredLimit = rateLimitService.TryAcquireInitialGeneration(clientIp);
+            ApplyRateLimitHeaders(httpContext.Response, acquiredLimit);
+            if (!acquiredLimit.Allowed)
+                return RateLimitExceeded(httpContext.Response, acquiredLimit);
+        }
+
+        try
+        {
+            var brief = await briefService.GenerateAsync(todaysArticles, language, ct);
+            briefCache.Set(dayStartUtc, dayEndUtc, language, brief);
+            ApplyRateLimitHeaders(httpContext.Response, acquiredLimit!);
+            return Results.Ok(brief);
+        }
+        catch (DailyBriefConfigurationException ex)
+        {
+            logger.LogWarning(ex, "Daily brief generation is not configured.");
+            return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+        catch (DailyBriefGenerationException ex)
+        {
+            logger.LogError(ex, "Daily brief generation failed.");
+            return Results.Json(
+                new { error = "The AI Daily Brief could not be generated. Please try again." },
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not reach DeepSeek while generating the daily brief.");
+            return Results.Json(
+                new { error = "The AI service is unavailable right now. Please try again." },
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            logger.LogError(ex, "DeepSeek timed out while generating the daily brief.");
+            return Results.Json(
+                new { error = "The AI service took too long to respond. Please try again." },
+                statusCode: StatusCodes.Status504GatewayTimeout);
+        }
     }
-    catch (DailyBriefConfigurationException ex)
+    finally
     {
-        logger.LogWarning(ex, "Daily brief generation is not configured.");
-        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
-    }
-    catch (DailyBriefGenerationException ex)
-    {
-        logger.LogError(ex, "Daily brief generation failed.");
-        return Results.Json(
-            new { error = "The AI Daily Brief could not be generated. Please try again." },
-            statusCode: StatusCodes.Status502BadGateway);
-    }
-    catch (HttpRequestException ex)
-    {
-        logger.LogError(ex, "Could not reach DeepSeek while generating the daily brief.");
-        return Results.Json(
-            new { error = "The AI service is unavailable right now. Please try again." },
-            statusCode: StatusCodes.Status502BadGateway);
-    }
-    catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
-    {
-        logger.LogError(ex, "DeepSeek timed out while generating the daily brief.");
-        return Results.Json(
-            new { error = "The AI service took too long to respond. Please try again." },
-            statusCode: StatusCodes.Status504GatewayTimeout);
+        rateLimitService.GenerationLock.Release();
     }
 });
 
@@ -293,3 +337,36 @@ _ = Task.Run(async () =>
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+static void ApplyRateLimitHeaders(HttpResponse response, DailyBriefLimitResult limit)
+{
+    response.Headers["X-AI-Regenerations-Limit"] = limit.DailyRegenerationLimit.ToString();
+    response.Headers["X-AI-Regenerations-Remaining"] = limit.RemainingRegenerations.ToString();
+    response.Headers["X-AI-Regenerate-After"] = limit.RetryAfterSeconds.ToString();
+    response.Headers["X-AI-Rate-Limit-Reason"] = limit.Reason.ToString();
+}
+
+static IResult RateLimitExceeded(HttpResponse response, DailyBriefLimitResult limit)
+{
+    response.Headers.RetryAfter = limit.RetryAfterSeconds.ToString();
+
+    var message = limit.Reason switch
+    {
+        DailyBriefLimitReason.Cooldown =>
+            "Please wait at least one minute between regenerations.",
+        DailyBriefLimitReason.DailyIpLimit =>
+            "You have used all 5 brief regenerations for today.",
+        DailyBriefLimitReason.GlobalDailyLimit =>
+            "The AI Daily Brief has reached its generation limit for today. Please try again tomorrow.",
+        _ => "Too many AI Daily Brief requests. Please try again later."
+    };
+
+    return Results.Json(new
+    {
+        error = message,
+        reason = limit.Reason.ToString(),
+        retryAfterSeconds = limit.RetryAfterSeconds,
+        remainingRegenerations = limit.RemainingRegenerations,
+        dailyRegenerationLimit = limit.DailyRegenerationLimit
+    }, statusCode: StatusCodes.Status429TooManyRequests);
+}

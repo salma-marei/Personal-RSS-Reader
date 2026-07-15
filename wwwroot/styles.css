@@ -1106,13 +1106,31 @@ body {
 .daily-brief-body .daily-brief-sources-panel li { margin: 0; }
 .daily-brief-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  column-gap: 16px;
+  row-gap: 6px;
   padding: 14px 22px;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.8rem;
+}
+.daily-brief-footer-message {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  text-align: end;
+}
+.daily-brief-quota {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 .daily-brief-read-time {
   display: inline-flex;
@@ -1128,6 +1146,14 @@ body {
   white-space: nowrap;
 }
 .daily-brief-actions { display: flex; align-items: center; gap: 8px; }
+.daily-brief-limit-notice {
+  color: #b84b4b;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  max-width: 360px;
+  text-align: end;
+}
+:root[data-theme="dark"] .daily-brief-limit-notice { color: #f09a9a; }
 .daily-brief-action {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -1145,6 +1171,14 @@ body {
   color: var(--accent-contrast);
 }
 .daily-brief-action.primary:hover { background: var(--gold-hover); border-color: var(--gold-hover); }
+.daily-brief-action:disabled,
+.daily-brief-action:disabled:hover {
+  background: var(--main-bg);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
 .daily-brief-state {
   display: flex;
   align-items: center;
@@ -1340,6 +1374,8 @@ body {
   .daily-brief-spotlight-points { grid-template-columns: 1fr; }
   .daily-brief-sources-panel a { grid-template-columns: 1fr; gap: 2px; }
   .daily-brief-actions { width: 100%; }
+  .daily-brief-footer-message { justify-content: flex-start; text-align: start; }
+  .daily-brief-limit-notice { max-width: none; text-align: start; }
   .daily-brief-action { flex: 1 1 auto; }
   .scroll-top {
     inset-inline-end: 24px;

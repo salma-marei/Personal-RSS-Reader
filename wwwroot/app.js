@@ -64,6 +64,11 @@ const i18n = {
     briefNotConfigured: 'The AI Daily Brief is not configured yet.',
     briefTitle: 'AI Daily Brief',
     briefDisplayTitle: 'Daily Brief',
+    briefCooldown: 'Please wait at least one minute between regenerations.',
+    briefDailyLimit: 'You have used all 5 brief regenerations for today.',
+    briefGlobalLimit: 'The AI Daily Brief has reached its generation limit for today.',
+    briefQuota: 'You have {remaining} regenerations today.',
+    briefQuotaOne: 'You have 1 regeneration today.',
     retry: 'Retry',
     switchLanguage: 'Switch language',
     sourceLinks: 'Contributing sources',
@@ -122,6 +127,11 @@ const i18n = {
     briefNotConfigured: 'لم يتم إعداد الموجز اليومي بعد.',
     briefTitle: 'الموجز اليومي بالذكاء الاصطناعي',
     briefDisplayTitle: 'الموجز اليومي',
+    briefCooldown: 'يُرجى الانتظار دقيقة واحدة على الأقل بين مرات إعادة الإنشاء.',
+    briefDailyLimit: 'لقد استخدمت محاولات إعادة الإنشاء الخمس المتاحة اليوم.',
+    briefGlobalLimit: 'وصل الموجز اليومي إلى الحد الإجمالي للإنشاء اليوم.',
+    briefQuota: 'لديك {remaining} مرات إعادة إنشاء اليوم.',
+    briefQuotaOne: 'لديك إعادة إنشاء واحدة اليوم.',
     retry: 'إعادة المحاولة',
     switchLanguage: 'تغيير اللغة',
     sourceLinks: 'المصادر المساهمة',
@@ -155,6 +165,11 @@ const state = {
     spotlightSection: null,
     sourceSection: null,
     language: null,
+    remainingRegenerations: null,
+    dailyRegenerationLimit: 5,
+    regenerateAvailableAt: 0,
+    limitReason: null,
+    notice: '',
   },
 };
 
@@ -412,6 +427,7 @@ function resetDailyBrief() {
   state.dailyBrief.spotlightSection = null;
   state.dailyBrief.sourceSection = null;
   state.dailyBrief.language = null;
+  state.dailyBrief.notice = '';
 }
 
 function updateDailyBriefButton() {
@@ -421,6 +437,32 @@ function updateDailyBriefButton() {
     button.disabled = state.dailyBrief.status === 'loading';
     setAiLabel(button, t('catchMeUp'));
   }
+}
+
+function updateDailyBriefQuota(response, payload) {
+  const remainingHeader = response.headers.get('X-AI-Regenerations-Remaining');
+  const limitHeader = response.headers.get('X-AI-Regenerations-Limit');
+  const remaining = remainingHeader ?? (payload && payload.remainingRegenerations);
+  const limit = limitHeader ?? (payload && payload.dailyRegenerationLimit);
+  const retryAfter = response.headers.get('X-AI-Regenerate-After')
+    ?? (payload && payload.retryAfterSeconds);
+  const reason = response.headers.get('X-AI-Rate-Limit-Reason')
+    ?? (payload && payload.reason);
+
+  if (remaining !== null && remaining !== undefined && !Number.isNaN(Number(remaining))) {
+    state.dailyBrief.remainingRegenerations = Number(remaining);
+  }
+  if (limit !== null && limit !== undefined && !Number.isNaN(Number(limit))) {
+    state.dailyBrief.dailyRegenerationLimit = Number(limit);
+  }
+  if (retryAfter !== null && retryAfter !== undefined && Number(retryAfter) > 0) {
+    state.dailyBrief.regenerateAvailableAt = Date.now() + (Number(retryAfter) * 1000);
+  } else {
+    state.dailyBrief.regenerateAvailableAt = 0;
+  }
+  state.dailyBrief.limitReason = reason && reason !== 'None'
+    ? reason
+    : (Number(retryAfter) > 0 ? 'Cooldown' : null);
 }
 
 function todayUtcRange() {
@@ -440,6 +482,24 @@ function scrollToDailyBrief() {
 
 async function generateDailyBrief(regenerate) {
   const brief = state.dailyBrief;
+  if (regenerate && brief.data) {
+    if (brief.remainingRegenerations === 0) {
+      brief.notice = t('briefDailyLimit');
+      renderCards();
+      return;
+    }
+    if (brief.limitReason === 'GlobalDailyLimit') {
+      brief.notice = t('briefGlobalLimit');
+      renderCards();
+      return;
+    }
+    if (brief.regenerateAvailableAt > Date.now()) {
+      brief.notice = t('briefCooldown');
+      renderCards();
+      return;
+    }
+  }
+
   if (!regenerate && brief.data && brief.language === state.lang) {
     brief.collapsed = false;
     brief.spotlightSection = null;
@@ -456,9 +516,11 @@ async function generateDailyBrief(regenerate) {
   }
 
   const requestLanguage = state.lang;
+  const previousData = brief.data;
   brief.status = 'loading';
   brief.data = null;
   brief.error = '';
+  brief.notice = '';
   brief.collapsed = false;
   brief.spotlightSection = null;
   brief.sourceSection = null;
@@ -476,18 +538,35 @@ async function generateDailyBrief(regenerate) {
 
     let payload = null;
     try { payload = await response.json(); } catch { /* handled below */ }
+    updateDailyBriefQuota(response, payload);
 
     if (!response.ok) {
       let message = t('briefFailed');
       if (response.status === 404) message = t('noArticlesToday');
       else if (response.status === 503) message = t('briefNotConfigured');
+      else if (response.status === 429 && payload) {
+        if (payload.reason === 'Cooldown') {
+          message = t('briefCooldown');
+        } else if (payload.reason === 'DailyIpLimit') {
+          message = t('briefDailyLimit');
+        } else if (payload.reason === 'GlobalDailyLimit') {
+          message = t('briefGlobalLimit');
+        }
+      }
       else if (requestLanguage === 'en' && payload && payload.error) message = payload.error;
+      if (response.status === 429 && previousData) {
+        brief.data = previousData;
+        brief.status = 'success';
+        brief.notice = message;
+        return;
+      }
       throw new Error(message);
     }
 
     if (state.lang !== requestLanguage) return;
     brief.data = payload;
     brief.status = 'success';
+    brief.notice = '';
   } catch (error) {
     if (state.lang !== requestLanguage) return;
     brief.error = error instanceof Error ? error.message : t('briefFailed');
@@ -793,13 +872,32 @@ function renderDailyBriefCard() {
   copy.className = 'daily-brief-action';
   copy.textContent = t('copySummary');
   copy.addEventListener('click', () => copyDailyBrief(copy));
+  const quota = document.createElement('span');
+  quota.className = 'daily-brief-quota';
+  const remainingRegenerations = briefState.remainingRegenerations
+    ?? briefState.dailyRegenerationLimit;
+  quota.textContent = remainingRegenerations === 1
+    ? t('briefQuotaOne')
+    : tf('briefQuota', { remaining: remainingRegenerations });
   const regenerate = document.createElement('button');
   regenerate.type = 'button';
   regenerate.className = 'daily-brief-action primary';
   regenerate.textContent = t('regenerate');
+  regenerate.disabled = briefState.remainingRegenerations === 0;
+  if (regenerate.disabled) regenerate.title = t('briefDailyLimit');
   regenerate.addEventListener('click', () => generateDailyBrief(true));
   actions.append(copy, regenerate);
-  footer.append(generatedAt, actions);
+  const footerMessage = document.createElement('div');
+  footerMessage.className = 'daily-brief-footer-message';
+  footerMessage.appendChild(quota);
+  if (briefState.notice) {
+    const notice = document.createElement('span');
+    notice.className = 'daily-brief-limit-notice';
+    notice.setAttribute('role', 'status');
+    notice.textContent = briefState.notice;
+    footerMessage.appendChild(notice);
+  }
+  footer.append(generatedAt, actions, footerMessage);
 
   card.append(header, body, footer);
   return card;
