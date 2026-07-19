@@ -424,6 +424,11 @@ app.MapPost("/daily-brief", async (
         return Results.BadRequest(new { error = "Only the current day can be summarized." });
 
     var user = await userManager.GetUserAsync(httpContext.User);
+    if (request.Regenerate && user is null)
+        return Results.Json(
+            new { error = "Sign in to regenerate the daily brief." },
+            statusCode: StatusCodes.Status403Forbidden);
+
     HashSet<Guid>? subscribedFeedIds = null;
     var cacheScope = "public";
     if (user is not null)

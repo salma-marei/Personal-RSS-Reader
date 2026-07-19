@@ -1011,6 +1011,7 @@ function scrollToDailyBrief() {
 
 async function generateDailyBrief(regenerate) {
   const brief = state.dailyBrief;
+  if (regenerate && !state.auth.user) return;
   if (state.auth.user && state.subscriptions.size === 0) {
     brief.status = 'error';
     brief.error = t('briefNeedsFeeds');
@@ -1407,24 +1408,27 @@ function renderDailyBriefCard() {
   copy.className = 'daily-brief-action';
   copy.textContent = t('copySummary');
   copy.addEventListener('click', () => copyDailyBrief(copy));
-  const quota = document.createElement('span');
-  quota.className = 'daily-brief-quota';
-  const remainingRegenerations = briefState.remainingRegenerations
-    ?? briefState.dailyRegenerationLimit;
-  quota.textContent = remainingRegenerations === 1
-    ? t('briefQuotaOne')
-    : tf('briefQuota', { remaining: remainingRegenerations });
-  const regenerate = document.createElement('button');
-  regenerate.type = 'button';
-  regenerate.className = 'daily-brief-action primary';
-  regenerate.textContent = t('regenerate');
-  regenerate.disabled = briefState.remainingRegenerations === 0;
-  if (regenerate.disabled) regenerate.title = t('briefDailyLimit');
-  regenerate.addEventListener('click', () => generateDailyBrief(true));
-  actions.append(copy, regenerate);
+  actions.append(copy);
   const footerMessage = document.createElement('div');
   footerMessage.className = 'daily-brief-footer-message';
-  footerMessage.appendChild(quota);
+  if (state.auth.user) {
+    const quota = document.createElement('span');
+    quota.className = 'daily-brief-quota';
+    const remainingRegenerations = briefState.remainingRegenerations
+      ?? briefState.dailyRegenerationLimit;
+    quota.textContent = remainingRegenerations === 1
+      ? t('briefQuotaOne')
+      : tf('briefQuota', { remaining: remainingRegenerations });
+    const regenerate = document.createElement('button');
+    regenerate.type = 'button';
+    regenerate.className = 'daily-brief-action primary';
+    regenerate.textContent = t('regenerate');
+    regenerate.disabled = briefState.remainingRegenerations === 0;
+    if (regenerate.disabled) regenerate.title = t('briefDailyLimit');
+    regenerate.addEventListener('click', () => generateDailyBrief(true));
+    actions.append(regenerate);
+    footerMessage.appendChild(quota);
+  }
   if (briefState.notice) {
     const notice = document.createElement('span');
     notice.className = 'daily-brief-limit-notice';
@@ -1432,7 +1436,8 @@ function renderDailyBriefCard() {
     notice.textContent = briefState.notice;
     footerMessage.appendChild(notice);
   }
-  footer.append(generatedAt, actions, footerMessage);
+  footer.append(generatedAt, actions);
+  if (footerMessage.childElementCount) footer.append(footerMessage);
 
   card.append(header, body, footer);
   return card;
