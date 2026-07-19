@@ -1,0 +1,56 @@
+[
+  {
+    "Id": "fb4a57ba-6897-48e6-8eec-990cd4395209",
+    "Url": "http://www.bbc.co.uk/arabic/index.xml",
+    "Name": "BBC Arabic",
+    "Language": "ar",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-11T20:29:44.8641047Z"
+  },
+  {
+    "Id": "65c3db5e-d98e-48f1-9349-8470f083061f",
+    "Url": "https://arabic.cnn.com/api/v1/rss/rss.xml",
+    "Name": "CNN Arabic RSS Feed",
+    "Language": "ar",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-11T20:33:09.9938442Z"
+  },
+  {
+    "Id": "32562039-a2f0-4900-b6fa-c97bedcdc193",
+    "Url": "https://www.almasryalyoum.com/rss/rssfeed",
+    "Name": "المصري اليوم | أخبار",
+    "Language": "ar",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-11T20:38:41.0050448Z"
+  },
+  {
+    "Id": "53facead-1a6e-4cc0-b371-7389aeb41d9e",
+    "Url": "https://www.express.pk/feed/",
+    "Name": "The Express News",
+    "Language": "ur",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-11T21:02:44.5018816Z"
+  },
+  {
+    "Id": "70ea8154-9f2a-4ae6-9630-1bb286f579b7",
+    "Url": "https://feeds.bbci.co.uk/news/rss.xml",
+    "Name": "BBC News",
+    "Language": "en",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-14T21:14:13.8939277Z"
+  },
+  {
+    "Id": "b6ec5af8-1752-4824-a0e2-90c87447cc67",
+    "Url": "https://www.cbsnews.com/latest/rss/main",
+    "Name": "Home - CBSNews.com",
+    "Language": "en",
+    "Category": "News",
+    "IsSuggested": true,
+    "AddedAt": "2026-07-14T21:27:14.49175Z"
+  }
+]

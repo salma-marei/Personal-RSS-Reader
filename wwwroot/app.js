@@ -5,7 +5,6 @@ const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
   }),
-  deleteFeed: (id) => fetch('/feeds/' + id, { method: 'DELETE' }),
   refreshFeed: (id) => fetch('/feeds/' + id + '/refresh', { method: 'POST' }),
   refreshAll: () => fetch('/feeds/refresh', { method: 'POST' }),
   river: () => fetch('/river').then(r => r.json()),
@@ -13,6 +12,28 @@ const api = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request)
+  }),
+  me: () => fetch('/api/auth/me').then(r => r.json()),
+  register: (email, password) => fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  }),
+  login: (email, password, rememberMe) => fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, rememberMe })
+  }),
+  logout: () => fetch('/api/auth/logout', { method: 'POST' }),
+  subscriptions: () => fetch('/api/subscriptions').then(r => r.json()),
+  subscribe: (feedId) => fetch('/api/subscriptions/' + feedId, { method: 'POST' }),
+  unsubscribe: (feedId) => fetch('/api/subscriptions/' + feedId, { method: 'DELETE' }),
+  articleStates: () => fetch('/api/article-states').then(r => r.json()),
+  setArticleRead: (request) => fetch('/api/article-states/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
+  }),
+  setReadLater: (request) => fetch('/api/article-states/read-later', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
   }),
 };
 
@@ -46,7 +67,9 @@ const i18n = {
     noArticlesYet: 'No articles yet. Try "Refresh all".',
     noArticlesInFeed: 'No articles yet. Try refreshing this feed.',
     noArticlesToday: 'No articles were published today.',
-    noFeeds: 'No feeds yet. Open Manage Feeds to add your first subscription.',
+    noFeeds: 'No feeds yet. Open Discover Feeds to add your first subscription.',
+    myFeeds: 'My Feeds',
+    chooseFeeds: 'Choose feeds',
     duplicateFeed: 'This feed is already in your subscriptions.',
     invalidFeed: 'Not a valid RSS/Atom feed.',
     openFullArticle: 'Open full article at source',
@@ -57,9 +80,8 @@ const i18n = {
     refreshingAll: 'Refreshing all...',
     refreshingFeed: 'Refreshing feed...',
     refreshing: 'Refreshing...',
-    removeFeed: 'Remove feed',
-    removeFeedConfirm: 'Remove "{name}"?',
     search: 'Search',
+    suggestedFeeds: 'Suggested Feeds',
     briefFailed: 'The AI Daily Brief could not be generated. Please try again.',
     briefNotConfigured: 'The AI Daily Brief is not configured yet.',
     briefTitle: 'AI Daily Brief',
@@ -67,9 +89,50 @@ const i18n = {
     briefCooldown: 'Please wait at least one minute between regenerations.',
     briefDailyLimit: 'You have used all 5 brief regenerations for today.',
     briefGlobalLimit: 'The AI Daily Brief has reached its generation limit for today.',
+    briefNeedsFeeds: 'Subscribe to at least one feed to create your personal brief.',
     briefQuota: 'You have {remaining} regenerations today.',
     briefQuotaOne: 'You have 1 regeneration today.',
     retry: 'Retry',
+    createAccount: 'Create account',
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    email: 'Email',
+    password: 'Password',
+    passwordHelp: 'Use at least 8 characters, including a letter and number.',
+    rememberMe: 'Remember me for 30 days',
+    registerSubtitle: 'Create an account to start building your personal reader.',
+    loginSubtitle: 'Continue building your personal reader.',
+    switchToRegister: 'Need an account? Create one',
+    switchToLogin: 'Already have an account? Sign in',
+    authenticating: 'Please wait...',
+    authFailed: 'Something went wrong. Please try again.',
+    account: 'Account',
+    welcomeReader: 'Welcome to Feed Reader',
+    guestAccountDescription: 'Sign in to start building your personal reader.',
+    subscribe: 'Subscribe',
+    subscribed: 'Subscribed',
+    unsubscribe: 'Unsubscribe',
+    addedToMyFeeds: '{name} added to My Feeds',
+    myFeedsEmpty: 'You have not subscribed to any feeds yet.',
+    noSuggestedFeeds: 'No suggested feeds match your search.',
+    discoverFeeds: 'Discover Feeds',
+    manageDiscoverFeeds: 'Manage & Discover Feeds',
+    unsubscribeConfirm: 'Unsubscribe from "{name}"?',
+    createPersonalFeed: 'Create your personal feed',
+    subscriptionPrompt: 'Sign in to subscribe to feeds and keep your reading list across devices.',
+    notNow: 'Not now',
+    guestManageNote: 'Browse suggested feeds. Sign in when you are ready to subscribe.',
+    userManageNote: 'Choose the suggested feeds you want in your personal reader.',
+    readLater: 'Read Later',
+    addToReadLater: 'Add to Read Later',
+    removeFromReadLater: 'Remove from Read Later',
+    addedToReadLater: 'Added to Read Later',
+    readLaterPrompt: 'Sign in to keep this article in your Read Later list.',
+    readLaterEmpty: 'Nothing saved yet. Bookmark an article to save it for later.',
+    buildMyFeeds: 'My Feeds',
+    welcomePersonalReader: 'Build your personal news feed',
+    chooseStartingFeeds: "Choose a few trusted sources to start. We'll keep everything updated automatically.",
+    articlesAvailable: '{count} recent articles',
     switchLanguage: 'Switch language',
     sourceLinks: 'Contributing sources',
     sources: '{count} sources',
@@ -82,6 +145,47 @@ const i18n = {
   },
   ar: {
     readTime: '\u0642\u0631\u0627\u0621\u0629 {minutes} \u062f',
+    suggestedFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a \u0645\u0642\u062a\u0631\u062d\u0629',
+    createAccount: '\u0625\u0646\u0634\u0627\u0621 \u062d\u0633\u0627\u0628',
+    signIn: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644',
+    signOut: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c',
+    email: '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
+    password: '\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631',
+    passwordHelp: '\u0627\u0633\u062a\u062e\u062f\u0645 8 \u0623\u062d\u0631\u0641 \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644\u060c \u0628\u0645\u0627 \u0641\u064a \u0630\u0644\u0643 \u062d\u0631\u0641 \u0648\u0631\u0642\u0645.',
+    rememberMe: '\u062a\u0630\u0643\u0631\u0646\u064a \u0644\u0645\u062f\u0629 30 \u064a\u0648\u0645\u064b\u0627',
+    registerSubtitle: '\u0623\u0646\u0634\u0626 \u062d\u0633\u0627\u0628\u064b\u0627 \u0644\u0628\u062f\u0621 \u062a\u062e\u0635\u064a\u0635 \u0642\u0627\u0631\u0626\u0643.',
+    loginSubtitle: '\u062a\u0627\u0628\u0639 \u0628\u0646\u0627\u0621 \u0642\u0627\u0631\u0626\u0643 \u0627\u0644\u0634\u062e\u0635\u064a.',
+    switchToRegister: '\u0644\u064a\u0633 \u0644\u062f\u064a\u0643 \u062d\u0633\u0627\u0628\u061f \u0623\u0646\u0634\u0626 \u062d\u0633\u0627\u0628\u064b\u0627',
+    switchToLogin: '\u0644\u062f\u064a\u0643 \u062d\u0633\u0627\u0628\u061f \u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644',
+    authenticating: '\u064a\u0631\u062c\u0649 \u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631...',
+    authFailed: '\u062d\u062f\u062b \u062e\u0637\u0623. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
+    account: '\u0627\u0644\u062d\u0633\u0627\u0628',
+    welcomeReader: '\u0645\u0631\u062d\u0628\u064b\u0627 \u0628\u0643 \u0641\u064a \u0642\u0627\u0631\u0626 \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a',
+    guestAccountDescription: '\u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0628\u062f\u0621 \u0628\u0646\u0627\u0621 \u0642\u0627\u0631\u0626\u0643 \u0627\u0644\u0634\u062e\u0635\u064a.',
+    subscribe: '\u0627\u0634\u062a\u0631\u0627\u0643',
+    subscribed: '\u0645\u0634\u062a\u0631\u0643',
+    unsubscribe: '\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
+    addedToMyFeeds: '\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 {name} \u0625\u0644\u0649 \u062e\u0644\u0627\u0635\u0627\u062a\u064a',
+    myFeedsEmpty: '\u0644\u0645 \u062a\u0634\u062a\u0631\u0643 \u0641\u064a \u0623\u064a \u062e\u0644\u0627\u0635\u0627\u062a \u0628\u0639\u062f.',
+    noSuggestedFeeds: '\u0644\u0627 \u062a\u0648\u062c\u062f \u062e\u0644\u0627\u0635\u0627\u062a \u0645\u0642\u062a\u0631\u062d\u0629 \u062a\u0637\u0627\u0628\u0642 \u0628\u062d\u062b\u0643.',
+    discoverFeeds: '\u0627\u0643\u062a\u0634\u0641 \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a',
+    manageDiscoverFeeds: '\u0625\u062f\u0627\u0631\u0629 \u0648\u0627\u0643\u062a\u0634\u0627\u0641 \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a',
+    unsubscribeConfirm: '\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0641\u064a "{name}"\u061f',
+    createPersonalFeed: '\u0623\u0646\u0634\u0626 \u0642\u0627\u0631\u0626\u0643 \u0627\u0644\u0634\u062e\u0635\u064a',
+    subscriptionPrompt: '\u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0641\u064a \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a \u0648\u0627\u0644\u0627\u062d\u062a\u0641\u0627\u0638 \u0628\u0642\u0627\u0626\u0645\u0629 \u0642\u0631\u0627\u0621\u062a\u0643 \u0639\u0628\u0631 \u0627\u0644\u0623\u062c\u0647\u0632\u0629.',
+    notNow: '\u0644\u064a\u0633 \u0627\u0644\u0622\u0646',
+    guestManageNote: '\u062a\u0635\u0641\u062d \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a \u0627\u0644\u0645\u0642\u062a\u0631\u062d\u0629. \u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0639\u0646\u062f\u0645\u0627 \u062a\u0631\u064a\u062f \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643.',
+    userManageNote: '\u0627\u062e\u062a\u0631 \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a \u0627\u0644\u0645\u0642\u062a\u0631\u062d\u0629 \u0627\u0644\u062a\u064a \u062a\u0631\u064a\u062f\u0647\u0627 \u0641\u064a \u0642\u0627\u0631\u0626\u0643 \u0627\u0644\u0634\u062e\u0635\u064a.',
+    readLater: '\u0627\u0642\u0631\u0623 \u0644\u0627\u062d\u0642\u064b\u0627',
+    addToReadLater: '\u0623\u0636\u0641 \u0625\u0644\u0649 \u0627\u0642\u0631\u0623 \u0644\u0627\u062d\u0642\u064b\u0627',
+    removeFromReadLater: '\u0625\u0632\u0627\u0644\u0629 \u0645\u0646 \u0627\u0642\u0631\u0623 \u0644\u0627\u062d\u0642\u064b\u0627',
+    addedToReadLater: '\u062a\u0645\u062a \u0627\u0644\u0625\u0636\u0627\u0641\u0629 \u0625\u0644\u0649 \u0627\u0642\u0631\u0623 \u0644\u0627\u062d\u0642\u064b\u0627',
+    readLaterPrompt: '\u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0644\u0627\u062d\u062a\u0641\u0627\u0638 \u0628\u0647\u0630\u0647 \u0627\u0644\u0645\u0642\u0627\u0644\u0629 \u0641\u064a \u0642\u0627\u0626\u0645\u0629 \u0627\u0642\u0631\u0623 \u0644\u0627\u062d\u0642\u064b\u0627.',
+    readLaterEmpty: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0642\u0627\u0644\u0627\u062a \u0645\u062d\u0641\u0648\u0638\u0629 \u0628\u0639\u062f. \u0627\u062d\u0641\u0638 \u0645\u0642\u0627\u0644\u0629 \u0628\u0627\u0644\u0639\u0644\u0627\u0645\u0629 \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629 \u0644\u0642\u0631\u0627\u0621\u062a\u0647\u0627 \u0644\u0627\u062d\u0642\u064b\u0627.',
+    buildMyFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a\u064a',
+    welcomePersonalReader: '\u0627\u0628\u0646\u0650 \u0645\u0648\u062c\u0632\u0643 \u0627\u0644\u0625\u062e\u0628\u0627\u0631\u064a \u0627\u0644\u0634\u062e\u0635\u064a',
+    chooseStartingFeeds: '\u0627\u062e\u062a\u0631 \u0628\u0639\u0636 \u0627\u0644\u0645\u0635\u0627\u062f\u0631 \u0627\u0644\u0645\u0648\u062b\u0648\u0642\u0629 \u0644\u0644\u0628\u062f\u0621. \u0633\u0646\u062d\u0627\u0641\u0638 \u0639\u0644\u0649 \u062a\u062d\u062f\u064a\u062b \u0643\u0644 \u0634\u064a\u0621 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627.',
+    articlesAvailable: '{count} \u0645\u0642\u0627\u0644\u0629 \u062d\u062f\u064a\u062b\u0629',
     categorySpotlight: '\u0646\u0638\u0631\u0629 \u0645\u0631\u0643\u0632\u0629',
     closeCategory: '\u0625\u063a\u0644\u0627\u0642 \u0646\u0638\u0631\u0629 \u0627\u0644\u0641\u0626\u0629',
     collapseBrief: '\u0637\u064a \u0627\u0644\u0645\u0648\u062c\u0632 \u0627\u0644\u064a\u0648\u0645\u064a',
@@ -110,6 +214,8 @@ const i18n = {
     noArticlesInFeed: 'لا توجد مقالات بعد. جرّب تحديث هذه الخلاصة.',
     noArticlesToday: 'لم تُنشر أي مقالات اليوم.',
     noFeeds: 'لا توجد خلاصات بعد. افتح إدارة الخلاصات لإضافة اشتراكك الأول.',
+    myFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a\u064a',
+    chooseFeeds: '\u0627\u062e\u062a\u0631 \u062e\u0644\u0627\u0635\u0627\u062a',
     duplicateFeed: 'هذه الخلاصة موجودة بالفعل في اشتراكاتك.',
     invalidFeed: 'هذا الرابط ليس خلاصة RSS/Atom صالحة.',
     openFullArticle: 'فتح المقالة كاملة من المصدر',
@@ -120,8 +226,6 @@ const i18n = {
     refreshingAll: 'جارٍ تحديث الكل...',
     refreshingFeed: 'جارٍ تحديث الخلاصة...',
     refreshing: 'جار التحديث...',
-    removeFeed: 'حذف الخلاصة',
-    removeFeedConfirm: 'حذف "{name}"؟',
     search: 'بحث',
     briefFailed: 'تعذر إنشاء الموجز اليومي. يُرجى المحاولة مرة أخرى.',
     briefNotConfigured: 'لم يتم إعداد الموجز اليومي بعد.',
@@ -171,6 +275,16 @@ const state = {
     limitReason: null,
     notice: '',
   },
+  auth: {
+    loading: true,
+    user: null,
+    mode: 'login',
+    pendingSubscriptionId: null,
+    pendingFeedUrl: null,
+    pendingReadLaterArticle: null,
+  },
+  subscriptions: new Set(),
+  articleStates: new Map(),
 };
 
 let recentFeedIds = [];
@@ -189,6 +303,355 @@ function tf(key, values) {
     (text, entry) => text.replace('{' + entry[0] + '}', entry[1]),
     t(key)
   );
+}
+
+// ---------- authentication ----------
+async function loadAuthState() {
+  try {
+    const result = await api.me();
+    state.auth.user = result.isAuthenticated ? result : null;
+    await loadSubscriptions();
+    await loadArticleStates();
+  } catch {
+    state.auth.user = null;
+    state.subscriptions.clear();
+    state.articleStates.clear();
+  } finally {
+    state.auth.loading = false;
+    updateAuthUi();
+  }
+}
+
+function updateAuthUi() {
+  const signedIn = Boolean(state.auth.user);
+  const email = state.auth.user?.email || '';
+  const initial = email.trim().charAt(0).toLocaleUpperCase();
+
+  for (const button of document.querySelectorAll('.profile-button')) {
+    button.setAttribute('aria-label', t('account'));
+    button.querySelector('.profile-guest-icon').hidden = signedIn;
+    const initialElement = button.querySelector('.profile-initial');
+    initialElement.hidden = !signedIn;
+    initialElement.textContent = initial;
+  }
+
+  for (const menu of document.querySelectorAll('.profile-menu')) {
+    menu.querySelector('.profile-menu-guest').hidden = signedIn;
+    menu.querySelector('.profile-menu-user').hidden = !signedIn;
+    menu.querySelector('.profile-menu-title').textContent = t('welcomeReader');
+    menu.querySelector('.profile-menu-description').textContent = t('guestAccountDescription');
+    menu.querySelector('[data-auth-action="login"]').textContent = t('signIn');
+    menu.querySelector('[data-auth-action="register"]').textContent = t('createAccount');
+    menu.querySelector('.profile-menu-email').textContent = email;
+    menu.querySelector('.profile-menu-email').title = email;
+    menu.querySelector('.profile-menu-avatar').textContent = initial;
+    menu.querySelector('.profile-signout span').textContent = t('signOut');
+  }
+  updateAuthModalText();
+  document.getElementById('auth-gate-title').textContent = t('createPersonalFeed');
+  document.getElementById('auth-gate-description').textContent = t('subscriptionPrompt');
+  document.getElementById('auth-gate-login').textContent = t('signIn');
+  document.getElementById('auth-gate-register').textContent = t('createAccount');
+  document.getElementById('auth-gate-dismiss').textContent = t('notNow');
+  renderSubscriptionControls();
+  renderSidebar();
+  renderCards();
+  updateDailyBriefButton();
+  updateManageFeedLabels();
+  if (window.location.pathname === '/manage-feeds') renderFeedManager();
+}
+
+function updateAuthModalText() {
+  const registering = state.auth.mode === 'register';
+  document.getElementById('auth-modal-title').textContent =
+    t(registering ? 'createAccount' : 'signIn');
+  document.getElementById('auth-modal-subtitle').textContent =
+    t(registering ? 'registerSubtitle' : 'loginSubtitle');
+  document.getElementById('auth-email-label').textContent = t('email');
+  document.getElementById('auth-password-label').textContent = t('password');
+  document.getElementById('auth-password-help').textContent = t('passwordHelp');
+  document.getElementById('auth-remember-label').textContent = t('rememberMe');
+  document.getElementById('auth-remember-row').hidden = registering;
+  document.getElementById('auth-submit').textContent =
+    t(registering ? 'createAccount' : 'signIn');
+  document.getElementById('auth-switch').textContent =
+    t(registering ? 'switchToLogin' : 'switchToRegister');
+  document.getElementById('auth-password-input').autocomplete =
+    registering ? 'new-password' : 'current-password';
+}
+
+function openAuthModal(mode) {
+  closeProfileMenus();
+  state.auth.mode = mode === 'register' ? 'register' : 'login';
+  document.getElementById('auth-error').hidden = true;
+  document.getElementById('auth-form').reset();
+  updateAuthModalText();
+  document.getElementById('auth-modal').hidden = false;
+  requestAnimationFrame(() => document.getElementById('auth-email-input').focus());
+}
+
+function closeAuthModal(clearPending = true) {
+  document.getElementById('auth-modal').hidden = true;
+  if (clearPending) {
+    state.auth.pendingSubscriptionId = null;
+    state.auth.pendingFeedUrl = null;
+    state.auth.pendingReadLaterArticle = null;
+  }
+}
+
+function authErrorMessage(payload) {
+  if (payload?.error) return payload.error;
+  const validationErrors = payload?.errors && Object.values(payload.errors).flat();
+  return validationErrors?.[0] || t('authFailed');
+}
+
+async function submitAuthForm(event) {
+  event.preventDefault();
+  const email = document.getElementById('auth-email-input').value.trim();
+  const password = document.getElementById('auth-password-input').value;
+  const rememberMe = document.getElementById('auth-remember').checked;
+  const submit = document.getElementById('auth-submit');
+  const error = document.getElementById('auth-error');
+  submit.disabled = true;
+  submit.textContent = t('authenticating');
+  error.hidden = true;
+
+  try {
+    const response = state.auth.mode === 'register'
+      ? await api.register(email, password)
+      : await api.login(email, password, rememberMe);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(authErrorMessage(payload));
+
+    state.auth.user = payload;
+    resetDailyBrief();
+    closeAuthModal(false);
+    await loadSubscriptions();
+    await loadArticleStates();
+    const pendingFeedId = state.auth.pendingSubscriptionId;
+    const pendingFeedUrl = state.auth.pendingFeedUrl;
+    const pendingArticle = state.auth.pendingReadLaterArticle;
+    state.auth.pendingSubscriptionId = null;
+    state.auth.pendingFeedUrl = null;
+    state.auth.pendingReadLaterArticle = null;
+    if (pendingFeedId) await subscribeToFeed(pendingFeedId);
+    if (pendingFeedUrl) await addCustomFeed(pendingFeedUrl);
+    if (pendingArticle) await setReadLater(pendingArticle, true);
+    updateAuthUi();
+  } catch (authError) {
+    error.textContent = authError instanceof Error ? authError.message : t('authFailed');
+    error.hidden = false;
+  } finally {
+    submit.disabled = false;
+    updateAuthModalText();
+  }
+}
+
+async function logout() {
+  const response = await api.logout();
+  if (!response.ok) return;
+  state.auth.user = null;
+  resetDailyBrief();
+  state.subscriptions.clear();
+  state.articleStates.clear();
+  state.auth.pendingSubscriptionId = null;
+  state.auth.pendingFeedUrl = null;
+  state.auth.pendingReadLaterArticle = null;
+  if (state.selected === 'read-later') state.selected = 'all';
+  closeProfileMenus();
+  updateAuthUi();
+  renderSubscriptionControls();
+  if (window.location.pathname === '/manage-feeds') renderFeedManager();
+}
+
+async function loadSubscriptions() {
+  state.subscriptions.clear();
+  if (!state.auth.user) return;
+  const items = await api.subscriptions();
+  for (const item of items || []) state.subscriptions.add(item.feedId);
+}
+
+async function loadArticleStates() {
+  state.articleStates.clear();
+  if (!state.auth.user) return;
+  const items = await api.articleStates();
+  for (const item of items || []) state.articleStates.set(item.articleKey, item);
+}
+
+function isSubscribed(feedId) {
+  return state.subscriptions.has(feedId);
+}
+
+function openSubscriptionPrompt(feedId) {
+  state.auth.pendingSubscriptionId = feedId;
+  document.getElementById('auth-gate-modal').hidden = false;
+}
+
+function closeSubscriptionPrompt(clearPending = true) {
+  document.getElementById('auth-gate-modal').hidden = true;
+  if (clearPending) {
+    state.auth.pendingSubscriptionId = null;
+    state.auth.pendingFeedUrl = null;
+    state.auth.pendingReadLaterArticle = null;
+  }
+}
+
+async function requestSubscription(feedId) {
+  if (!state.auth.user) {
+    openSubscriptionPrompt(feedId);
+    return;
+  }
+  if (isSubscribed(feedId)) {
+    const feed = feedById(feedId);
+    if (!confirm(tf('unsubscribeConfirm', { name: feed?.name || '' }))) return;
+    await unsubscribeFromFeed(feedId);
+    return;
+  }
+  await subscribeToFeed(feedId);
+}
+
+let latestSubscriptionId = null;
+
+async function subscribeToFeed(feedId) {
+  const response = await api.subscribe(feedId);
+  if (!response.ok) return;
+  state.subscriptions.add(feedId);
+  latestSubscriptionId = feedId;
+  resetDailyBrief();
+  updateDailyBriefButton();
+  const feed = feedById(feedId);
+  showSubscriptionToast(tf('addedToMyFeeds', { name: feed?.name || '' }));
+  renderSidebar();
+  renderCards();
+  renderSubscriptionControls();
+  if (window.location.pathname === '/manage-feeds') renderFeedManager();
+}
+
+let subscriptionToastTimer = null;
+function showSubscriptionToast(message) {
+  const toast = document.getElementById('subscription-toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.hidden = false;
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  clearTimeout(subscriptionToastTimer);
+  subscriptionToastTimer = setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => { toast.hidden = true; }, 180);
+  }, 2800);
+}
+
+function updateSubscriptionButton(button, subscribed) {
+  button.classList.toggle('is-subscribed', subscribed);
+  button.replaceChildren();
+  if (!subscribed) {
+    button.textContent = t('subscribe');
+    button.setAttribute('aria-label', t('subscribe'));
+    return;
+  }
+
+  const status = document.createElement('span');
+  status.className = 'subscription-status-label';
+  status.textContent = t('subscribed');
+  const action = document.createElement('span');
+  action.className = 'subscription-action-label';
+  action.textContent = t('unsubscribe');
+  button.append(status, action);
+  button.setAttribute('aria-label', t('unsubscribe'));
+}
+
+async function unsubscribeFromFeed(feedId) {
+  const response = await api.unsubscribe(feedId);
+  if (!response.ok) return;
+  state.subscriptions.delete(feedId);
+  if (latestSubscriptionId === feedId) latestSubscriptionId = null;
+  resetDailyBrief();
+  updateDailyBriefButton();
+  if (state.selected === feedId) state.selected = 'all';
+  renderSidebar();
+  renderCards();
+  renderSubscriptionControls();
+  if (window.location.pathname === '/manage-feeds') renderFeedManager();
+}
+
+async function addCustomFeed(url) {
+  const input = document.getElementById('feed-manager-url');
+  const button = document.getElementById('feed-manager-add-button');
+  const error = document.getElementById('feed-manager-error');
+  if (error) error.hidden = true;
+  if (button) button.disabled = true;
+
+  try {
+    const response = await api.addFeed(url);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || t('couldNotAddFeed'));
+
+    await loadSubscriptions();
+    await loadAll();
+    if (input) input.value = '';
+    if (payload.feed?.id) {
+      state.selected = payload.feed.id;
+      navigateToReader();
+      renderSidebar();
+      renderCards();
+    }
+  } catch (addError) {
+    if (error) {
+      error.textContent = addError instanceof Error ? addError.message : t('couldNotAddFeed');
+      error.hidden = false;
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function submitCustomFeed(event) {
+  event.preventDefault();
+  const input = document.getElementById('feed-manager-url');
+  const url = input.value.trim();
+  const error = document.getElementById('feed-manager-error');
+  if (!url) {
+    error.textContent = t('urlRequired');
+    error.hidden = false;
+    return;
+  }
+  if (!state.auth.user) {
+    state.auth.pendingFeedUrl = url;
+    state.auth.pendingSubscriptionId = null;
+    openSubscriptionPrompt(null);
+    state.auth.pendingFeedUrl = url;
+    return;
+  }
+  await addCustomFeed(url);
+}
+
+function profileMenuIsOpen(menuId) {
+  return !document.getElementById(menuId).hidden;
+}
+
+function setProfileMenuOpen(menuId, buttonId, open) {
+  const menu = document.getElementById(menuId);
+  const button = document.getElementById(buttonId);
+  menu.hidden = !open;
+  button.setAttribute('aria-expanded', String(open));
+}
+
+function closeProfileMenus() {
+  setProfileMenuOpen('profile-menu', 'profile-button', false);
+  setProfileMenuOpen('mobile-profile-menu', 'mobile-profile-button', false);
+}
+
+function toggleProfileMenu(menuId, buttonId) {
+  const open = !profileMenuIsOpen(menuId);
+  closeProfileMenus();
+  if (open) {
+    if (menuId === 'mobile-profile-menu') {
+      setMobileMoreOpen(false);
+      setMobileFeedsOpen(false);
+      setMobileSearchOpen(false);
+    }
+    setProfileMenuOpen(menuId, buttonId, true);
+  }
 }
 
 function timeAgo(iso) {
@@ -279,7 +742,65 @@ function localizeFeedError(message) {
 }
 function countFor(feedId) { return state.articles.filter(a => a.sourceFeedId === feedId).length; }
 function feedById(feedId) { return state.feeds.find(f => f.id === feedId); }
+function readerFeeds() {
+  return state.auth.user
+    ? state.feeds.filter(feed => state.subscriptions.has(feed.id))
+    : state.feeds;
+}
+function readerArticles() {
+  if (!state.auth.user) return state.articles;
+  return state.articles.filter(article => state.subscriptions.has(article.sourceFeedId));
+}
 function keyOf(a) { return a.link || ((a.sourceFeedId || a.sourceFeedUrl || '') + '|' + (a.title || '')); }
+function articleState(a) { return state.articleStates.get(keyOf(a)); }
+function articleStateRequest(a, value) {
+  return {
+    articleKey: keyOf(a), value,
+    title: a.title, link: a.link, publishedAt: a.publishedAt,
+    sourceFeedId: a.sourceFeedId, sourceFeedName: a.sourceFeedName,
+    sourceFeedUrl: a.sourceFeedUrl, summary: a.summary, imageUrl: a.imageUrl
+  };
+}
+function savedStateToArticle(item) {
+  return {
+    title: item.title, link: item.link, publishedAt: item.publishedAt,
+    sourceFeedId: item.sourceFeedId, sourceFeedName: item.sourceFeedName || '',
+    sourceFeedUrl: item.sourceFeedUrl || '', summary: item.summary, imageUrl: item.imageUrl
+  };
+}
+async function markArticleRead(article) {
+  if (!state.auth.user) return;
+  const response = await api.setArticleRead(articleStateRequest(article, true));
+  if (!response.ok) return;
+  const item = await response.json().catch(() => null);
+  if (item) state.articleStates.set(item.articleKey, item);
+  else state.articleStates.delete(keyOf(article));
+  renderSidebar();
+  renderCards();
+}
+async function setReadLater(article, value) {
+  if (!state.auth.user) return;
+  const response = await api.setReadLater(articleStateRequest(article, value));
+  if (!response.ok) return;
+  const item = await response.json().catch(() => null);
+  if (item) state.articleStates.set(item.articleKey, item);
+  else state.articleStates.delete(keyOf(article));
+  if (value) showSubscriptionToast(t('addedToReadLater'));
+  renderSidebar();
+  renderCards();
+}
+async function toggleReadLater(article) {
+  if (!state.auth.user) {
+    state.auth.pendingReadLaterArticle = article;
+    state.auth.pendingSubscriptionId = null;
+    state.auth.pendingFeedUrl = null;
+    document.getElementById('auth-gate-title').textContent = t('readLater');
+    document.getElementById('auth-gate-description').textContent = t('readLaterPrompt');
+    document.getElementById('auth-gate-modal').hidden = false;
+    return;
+  }
+  await setReadLater(article, !articleState(article)?.readLaterAt);
+}
 
 // Flag articles we haven't seen before as NEW (skipped on the very first load).
 function markNew(articles) {
@@ -315,6 +836,17 @@ function applyTheme(theme) {
   try { localStorage.setItem('rss-theme', state.theme); } catch { /* ignore */ }
 }
 
+function updateManageFeedLabels() {
+  const label = t(state.auth.user ? 'manageDiscoverFeeds' : 'discoverFeeds');
+  const arrow = state.lang === 'ar' ? ' ←' : ' →';
+  const sidebar = document.getElementById('sidebar-manage-feeds');
+  const mobile = document.getElementById('mobile-manage-feeds');
+  const title = document.getElementById('feed-manager-title');
+  if (sidebar) sidebar.textContent = label + arrow;
+  if (mobile) mobile.textContent = label + arrow;
+  if (title) title.textContent = label;
+}
+
 function applyLanguage(lang, rerender) {
   const nextLanguage = lang === 'ar' ? 'ar' : 'en';
   if (state.dailyBrief.language && state.dailyBrief.language !== nextLanguage) {
@@ -331,8 +863,6 @@ function applyLanguage(lang, rerender) {
 
   const sidebarFeedSearch = document.getElementById('sidebar-feed-search');
   if (sidebarFeedSearch) sidebarFeedSearch.placeholder = state.lang === 'ar' ? 'ابحث عن خلاصة' : 'Find a feed';
-  const sidebarManageFeeds = document.getElementById('sidebar-manage-feeds');
-  if (sidebarManageFeeds) sidebarManageFeeds.textContent = state.lang === 'ar' ? 'إدارة كل الخلاصات ←' : 'Manage all feeds →';
 
   const addError = document.getElementById('add-error');
   if (addError) {
@@ -353,10 +883,6 @@ function applyLanguage(lang, rerender) {
   if (mobileFeedsLink) mobileFeedsLink.textContent = t('feeds');
   const mobileFeedSearch = document.getElementById('mobile-feed-search');
   if (mobileFeedSearch) mobileFeedSearch.placeholder = state.lang === 'ar' ? 'ابحث عن خلاصة' : 'Find a feed';
-  const mobileManageFeeds = document.getElementById('mobile-manage-feeds');
-  if (mobileManageFeeds) mobileManageFeeds.textContent = state.lang === 'ar' ? 'إدارة كل الخلاصات ←' : 'Manage all feeds →';
-  const managerTitle = document.getElementById('feed-manager-title');
-  if (managerTitle) managerTitle.textContent = state.lang === 'ar' ? 'إدارة الخلاصات' : 'Manage Feeds';
   const managerSubtitle = document.getElementById('feed-manager-subtitle');
   if (managerSubtitle) managerSubtitle.textContent = state.lang === 'ar' ? 'أضف اشتراكاتك أو ابحث عنها أو احذفها.' : 'Add, find, or remove your subscriptions.';
   const managerBack = document.getElementById('feed-manager-back');
@@ -408,6 +934,7 @@ function applyLanguage(lang, rerender) {
   }
 
   applyTheme(state.theme);
+  updateAuthUi();
   updateDailyBriefButton();
   try { localStorage.setItem('rss-lang', state.lang); } catch { /* ignore */ }
 
@@ -431,10 +958,12 @@ function resetDailyBrief() {
 }
 
 function updateDailyBriefButton() {
+  const needsFeeds = Boolean(state.auth.user) && state.subscriptions.size === 0;
   for (const id of ['catch-me-up', 'mobile-catch-me-up']) {
     const button = document.getElementById(id);
     if (!button) continue;
-    button.disabled = state.dailyBrief.status === 'loading';
+    button.disabled = state.dailyBrief.status === 'loading' || needsFeeds;
+    button.title = needsFeeds ? t('briefNeedsFeeds') : '';
     setAiLabel(button, t('catchMeUp'));
   }
 }
@@ -482,6 +1011,12 @@ function scrollToDailyBrief() {
 
 async function generateDailyBrief(regenerate) {
   const brief = state.dailyBrief;
+  if (state.auth.user && state.subscriptions.size === 0) {
+    brief.status = 'error';
+    brief.error = t('briefNeedsFeeds');
+    renderCards();
+    return;
+  }
   if (regenerate && brief.data) {
     if (brief.remainingRegenerations === 0) {
       brief.notice = t('briefDailyLimit');
@@ -933,7 +1468,7 @@ async function loadAll() {
   const riverP = api.river().catch(() => []);
 
   state.feeds = (await feedsP) || [];
-  if (state.selected !== 'all' && !feedById(state.selected)) state.selected = 'all';
+  if (!['all', 'read-later'].includes(state.selected) && !feedById(state.selected)) state.selected = 'all';
   renderSidebar();
 
   state.articles = (await riverP) || [];
@@ -955,21 +1490,26 @@ function renderSidebar() {
   const nav = document.getElementById('feed-nav');
   const search = document.getElementById('sidebar-feed-search');
   const query = search.value.trim().toLocaleLowerCase();
-  const recent = recentFeedIds.map(feedById).filter(Boolean);
-  const ordered = [...recent, ...state.feeds.filter(feed => !recentFeedIds.includes(feed.id))];
+  const available = readerFeeds();
+  const suggested = available.filter(feed => feed.isSuggested);
+  const ordered = [...suggested, ...available.filter(feed => !feed.isSuggested)];
   const visible = (query
     ? ordered.filter(feed => feed.name.toLocaleLowerCase().includes(query))
     : ordered
   ).slice(0, query ? 10 : 6);
 
   nav.innerHTML = '';
-  nav.appendChild(navItem('all', t('allFeeds'), state.articles.length, null));
+  nav.appendChild(navItem('all', state.auth.user ? t('myFeeds') : t('allFeeds'), readerArticles().length, null));
+  if (state.auth.user) {
+    const readLaterCount = [...state.articleStates.values()].filter(item => item.readLaterAt).length;
+    nav.appendChild(navItem('read-later', t('readLater'), readLaterCount, null));
+  }
   if (visible.length) {
     const sectionLabel = document.createElement('p');
     sectionLabel.className = 'sidebar-feed-label';
     sectionLabel.textContent = query
       ? (state.lang === 'ar' ? 'نتائج البحث' : 'Search results')
-      : (state.lang === 'ar' ? 'الخلاصات الأخيرة' : 'Recent feeds');
+      : (state.auth.user ? t('myFeeds') : t('suggestedFeeds'));
     nav.appendChild(sectionLabel);
   }
   for (const feed of visible) nav.appendChild(navItem(feed.id, feed.name, countFor(feed.id), feed));
@@ -986,7 +1526,7 @@ function renderSidebar() {
 function updateSidebarRefreshLabel() {
   const button = document.getElementById('refresh-all');
   if (!button || button.disabled) return;
-  button.textContent = '⟳ ' + t(state.selected === 'all' ? 'refreshAll' : 'refreshFeed');
+  button.textContent = '⟳ ' + t(['all', 'read-later'].includes(state.selected) ? 'refreshAll' : 'refreshFeed');
 }
 
 function rememberFeed(key) {
@@ -1000,8 +1540,9 @@ function renderQuickFeeds() {
   const search = document.getElementById('mobile-feed-search');
   if (!list || !search) return;
   const query = search.value.trim().toLocaleLowerCase();
-  const recent = recentFeedIds.map(feedById).filter(Boolean);
-  const ordered = [...recent, ...state.feeds.filter(feed => !recentFeedIds.includes(feed.id))];
+  const available = readerFeeds();
+  const suggested = available.filter(feed => feed.isSuggested);
+  const ordered = [...suggested, ...available.filter(feed => !feed.isSuggested)];
   const visible = (query
     ? ordered.filter(feed => feed.name.toLocaleLowerCase().includes(query))
     : ordered
@@ -1009,14 +1550,17 @@ function renderQuickFeeds() {
 
   list.innerHTML = '';
   if (!query || t('allFeeds').toLocaleLowerCase().includes(query)) {
-    list.appendChild(quickFeedButton('all', t('allFeeds'), state.articles.length));
+    list.appendChild(quickFeedButton('all', state.auth.user ? t('myFeeds') : t('allFeeds'), readerArticles().length));
+  }
+  if (state.auth.user && !query) {
+    list.appendChild(quickFeedButton('read-later', t('readLater'), [...state.articleStates.values()].filter(item => item.readLaterAt).length));
   }
   if (visible.length) {
     const label = document.createElement('p');
     label.className = 'mobile-quick-feeds-label';
     label.textContent = query
       ? (state.lang === 'ar' ? 'نتائج البحث' : 'Search results')
-      : (state.lang === 'ar' ? 'الخلاصات الأخيرة' : 'Recent feeds');
+      : (state.auth.user ? t('myFeeds') : t('suggestedFeeds'));
     list.appendChild(label);
   }
   for (const feed of visible) list.appendChild(quickFeedButton(feed.id, feed.name, countFor(feed.id)));
@@ -1047,16 +1591,72 @@ function quickFeedButton(key, label, count) {
   return button;
 }
 
+function renderSubscriptionControls() {
+  const button = document.getElementById('feed-subscription-button');
+  if (!button) return;
+  const feed = state.selected === 'all' ? null : feedById(state.selected);
+  button.hidden = !feed || (!feed.isSuggested && !isSubscribed(feed.id));
+  if (button.hidden) return;
+  const subscribed = isSubscribed(feed.id);
+  updateSubscriptionButton(button, subscribed);
+  button.onclick = () => requestSubscription(feed.id);
+}
+
+function createFeedManagerSection(title, feeds, subscribed, capped = false) {
+  const section = document.createElement('details');
+  section.className = `feed-manager-section${capped ? ' is-capped' : ''}`;
+  section.open = true;
+
+  const heading = document.createElement('summary');
+  heading.className = 'feed-manager-section-heading';
+  const label = document.createElement('span');
+  label.textContent = `${title} (${feeds.length})`;
+  const chevron = document.createElement('span');
+  chevron.className = 'feed-manager-section-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  heading.append(label, chevron);
+
+  const content = document.createElement('div');
+  content.className = 'feed-manager-section-content';
+  section.append(heading, content);
+  return { section, content, subscribed };
+}
+
 function renderFeedManager() {
   const list = document.getElementById('feed-manager-list');
   const search = document.getElementById('feed-manager-search');
   if (!list || !search) return;
   const query = search.value.trim().toLocaleLowerCase();
-  const feeds = state.feeds.filter(feed =>
-    !query || feed.name.toLocaleLowerCase().includes(query) || (feed.url || '').toLocaleLowerCase().includes(query)
+  const matchesQuery = feed => !query ||
+    feed.name.toLocaleLowerCase().includes(query) ||
+    (feed.url || '').toLocaleLowerCase().includes(query);
+  const subscribedFeeds = state.auth.user
+    ? state.feeds.filter(feed => isSubscribed(feed.id) && matchesQuery(feed))
+    : [];
+  if (latestSubscriptionId) {
+    subscribedFeeds.sort((a, b) => Number(b.id === latestSubscriptionId) - Number(a.id === latestSubscriptionId));
+  }
+  const suggestedFeeds = state.feeds.filter(feed =>
+    feed.isSuggested && !isSubscribed(feed.id) && matchesQuery(feed)
   );
+  const note = document.getElementById('feed-manager-account-note');
+  if (note) note.textContent = t(state.auth.user ? 'userManageNote' : 'guestManageNote');
+
   list.innerHTML = '';
-  for (const feed of feeds) {
+  const sections = [];
+  if (state.auth.user) sections.push(createFeedManagerSection(t('myFeeds'), subscribedFeeds, true, true));
+  sections.push(createFeedManagerSection(t('suggestedFeeds'), suggestedFeeds, false));
+  for (const managerSection of sections) {
+    list.append(managerSection.section);
+    const feeds = managerSection.subscribed ? subscribedFeeds : suggestedFeeds;
+    if (!feeds.length) {
+      const empty = document.createElement('p');
+      empty.className = 'feed-manager-section-empty';
+      empty.textContent = t(managerSection.subscribed ? 'myFeedsEmpty' : 'noSuggestedFeeds');
+      managerSection.content.append(empty);
+      continue;
+    }
+    for (const feed of feeds) {
     const item = document.createElement('div');
     item.className = 'feed-manager-item';
     if (hasRtlText(feed.name)) item.classList.add('rtl-feed');
@@ -1079,33 +1679,18 @@ function renderFeedManager() {
     const count = document.createElement('span');
     count.className = 'feed-manager-count';
     count.textContent = countFor(feed.id);
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'feed-manager-delete';
-    remove.setAttribute('aria-label', state.lang === 'ar' ? 'حذف' : 'Delete');
-    remove.title = state.lang === 'ar' ? 'حذف' : 'Delete';
-    remove.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
-    remove.addEventListener('click', async () => {
-      if (!confirm(t('removeFeedConfirm').replace('{name}', feed.name))) {
-        remove.blur();
-        return;
-      }
-      remove.disabled = true;
-      await api.deleteFeed(feed.id);
-      if (state.selected === feed.id) state.selected = 'all';
-      await loadAll();
-      renderFeedManager();
-    });
-    actions.append(count, remove);
+    const subscription = document.createElement('button');
+    subscription.type = 'button';
+    subscription.className = `feed-manager-subscribe${managerSection.subscribed ? ' is-remove' : ''}`;
+    subscription.textContent = t(managerSection.subscribed ? 'unsubscribe' : 'subscribe');
+    subscription.setAttribute('aria-label', subscription.textContent);
+    subscription.addEventListener('click', () => requestSubscription(feed.id));
+    actions.append(count, subscription);
     item.append(open, actions);
-    list.appendChild(item);
+    managerSection.content.appendChild(item);
+    }
   }
-  if (!feeds.length) {
-    const empty = document.createElement('p');
-    empty.className = 'state';
-    empty.textContent = state.lang === 'ar' ? 'لا توجد خلاصات مطابقة.' : 'No matching feeds.';
-    list.appendChild(empty);
-  }
+
 }
 
 function applyRoute() {
@@ -1161,9 +1746,17 @@ function navItem(key, label, count, feed) {
 
 // ---------- filtering / sorting ----------
 function filteredArticles() {
-  let list = state.selected === 'all'
-    ? state.articles
-    : state.articles.filter(a => a.sourceFeedId === state.selected);
+  let list;
+  if (state.selected === 'read-later') {
+    const current = new Map(state.articles.map(article => [keyOf(article), article]));
+    list = [...state.articleStates.values()]
+      .filter(item => item.readLaterAt)
+      .map(item => current.get(item.articleKey) || savedStateToArticle(item));
+  } else {
+    list = state.selected === 'all'
+      ? readerArticles()
+      : readerArticles().filter(a => a.sourceFeedId === state.selected);
+  }
 
   const q = state.search.trim().toLowerCase();
   if (q) {
@@ -1184,6 +1777,7 @@ function filteredArticles() {
 // ---------- rendering ----------
 function renderCards() {
   const feed = state.selected === 'all' ? null : feedById(state.selected);
+  renderSubscriptionControls();
   const header = document.querySelector('.main-header');
   const viewName = document.getElementById('view-name');
   const isRtlFeed = Boolean(feed && hasRtlText(feed.name));
@@ -1191,7 +1785,9 @@ function renderCards() {
   header.classList.toggle('rtl-feed-view', isRtlFeed);
   header.classList.toggle('ltr-feed-view', isLtrFeed);
   viewName.dir = 'auto';
-  viewName.textContent = feed ? feed.name : t('allFeeds');
+  viewName.textContent = state.selected === 'read-later'
+      ? t('readLater')
+      : feed ? feed.name : (state.auth.user ? t('myFeeds') : t('allFeeds'));
 
   const list = filteredArticles();
   const total = list.length;
@@ -1204,10 +1800,26 @@ function renderCards() {
     cards.appendChild(renderDailyBriefCard());
   }
 
-  if (state.feeds.length === 0) {
-    const empty = document.createElement('p');
+  if (readerFeeds().length === 0 && state.selected !== 'read-later') {
+    if (state.auth.user && state.selected === 'all') {
+      viewName.textContent = t('buildMyFeeds');
+      document.getElementById('view-count').textContent = '';
+      renderSubscriptionOnboarding(cards);
+      return;
+    }
+    const empty = document.createElement('div');
     empty.className = 'state';
-    empty.textContent = t('noFeeds');
+    const message = document.createElement('p');
+    message.textContent = t('noFeeds');
+    empty.appendChild(message);
+    if (state.auth.user) {
+      const choose = document.createElement('button');
+      choose.type = 'button';
+      choose.className = 'empty-state-action';
+      choose.textContent = t('chooseFeeds');
+      choose.addEventListener('click', navigateToManager);
+      empty.appendChild(choose);
+    }
     cards.appendChild(empty);
     return;
   }
@@ -1216,12 +1828,81 @@ function renderCards() {
     empty.className = 'state';
     empty.textContent = state.search
       ? t('noArticlesMatch')
-      : t(state.selected === 'all' ? 'noArticlesYet' : 'noArticlesInFeed');
+      : state.selected === 'read-later'
+        ? t('readLaterEmpty')
+        : t(state.selected === 'all' ? 'noArticlesYet' : 'noArticlesInFeed');
     cards.appendChild(empty);
     return;
   }
 
   list.forEach((article, index) => cards.appendChild(renderCard(article, index === 0)));
+}
+
+function renderSubscriptionOnboarding(cards) {
+  const intro = document.createElement('section');
+  intro.className = 'subscription-onboarding-intro';
+  const title = document.createElement('h2');
+  title.textContent = t('welcomePersonalReader');
+  const description = document.createElement('p');
+  description.textContent = t('chooseStartingFeeds');
+  intro.append(title, description);
+  cards.appendChild(intro);
+
+  for (const feed of state.feeds.filter(item => item.isSuggested)) {
+    const card = document.createElement('article');
+    card.className = 'card article-card suggested-feed-card';
+    if (hasRtlText(feed.name)) card.dir = 'rtl';
+
+    const identity = document.createElement('div');
+    identity.className = 'suggested-feed-identity';
+    const previewArticle = state.articles.find(article =>
+      article.sourceFeedId === feed.id && safeHref(article.imageUrl));
+    const avatar = previewArticle
+      ? document.createElement('img')
+      : document.createElement('span');
+    avatar.className = previewArticle
+      ? 'suggested-feed-avatar suggested-feed-image'
+      : 'suggested-feed-avatar';
+    if (previewArticle) {
+      avatar.src = safeHref(previewArticle.imageUrl);
+      avatar.alt = '';
+      avatar.loading = 'lazy';
+      avatar.referrerPolicy = 'no-referrer';
+      avatar.addEventListener('error', () => {
+        const fallback = document.createElement('span');
+        fallback.className = 'suggested-feed-avatar';
+        fallback.textContent = feed.name.trim().charAt(0).toLocaleUpperCase();
+        avatar.replaceWith(fallback);
+      });
+    } else {
+      avatar.textContent = feed.name.trim().charAt(0).toLocaleUpperCase();
+    }
+    const details = document.createElement('div');
+    const name = document.createElement('h3');
+    name.dir = 'auto';
+    name.textContent = feed.name;
+    const meta = document.createElement('p');
+    const language = (feed.language || '').toLocaleUpperCase();
+    meta.textContent = [feed.category, language].filter(Boolean).join(' · ');
+    details.append(name, meta);
+    identity.append(avatar, details);
+
+    const available = document.createElement('p');
+    available.className = 'suggested-feed-available';
+    available.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+    available.textContent = tf('articlesAvailable', { count: countFor(feed.id) });
+    const subscribe = document.createElement('button');
+    subscribe.type = 'button';
+    subscribe.className = 'suggested-feed-subscribe';
+    subscribe.textContent = t('subscribe');
+    subscribe.addEventListener('click', async () => {
+      subscribe.disabled = true;
+      await subscribeToFeed(feed.id);
+      subscribe.disabled = false;
+    });
+    card.append(identity, available, subscribe);
+    cards.appendChild(card);
+  }
 }
 
 function renderCard(a, featured) {
@@ -1236,6 +1917,8 @@ function renderCard(a, featured) {
   cardText.className = 'card-text';
   const isNew = state.newKeys.has(keyOf(a));
   if (isNew) card.classList.add('new');
+  const savedState = articleState(a);
+  if (savedState?.readAt) card.classList.add('is-read');
 
   const showSource = state.fields.source && a.sourceFeedName;
   const showDate = state.fields.date && a.publishedAt;
@@ -1299,6 +1982,18 @@ function renderCard(a, featured) {
     cardText.appendChild(excerpt);
   }
 
+  const readLater = document.createElement('button');
+  readLater.type = 'button';
+  readLater.className = 'bookmark-button';
+  readLater.classList.toggle('active', Boolean(savedState?.readLaterAt));
+  readLater.setAttribute('aria-label', t(savedState?.readLaterAt ? 'removeFromReadLater' : 'addToReadLater'));
+  readLater.title = readLater.getAttribute('aria-label');
+  readLater.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z"/></svg>';
+  readLater.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleReadLater(a);
+  });
+
   const imageUrl = safeHref(a.imageUrl);
   if (imageUrl) {
     card.classList.add('has-image');
@@ -1319,6 +2014,7 @@ function renderCard(a, featured) {
     cardMain.appendChild(wrap);
   }
   cardMain.appendChild(cardText);
+  card.appendChild(readLater);
   card.appendChild(cardMain);
   card.addEventListener('click', () => openArticle(a));
 
@@ -1328,6 +2024,7 @@ function renderCard(a, featured) {
 // Open the full article at its source (feeds usually only carry a summary).
 // Falls back to the in-app modal for the rare article with no link.
 function openArticle(a) {
+  if (state.auth.user) markArticleRead(a);
   const href = safeHref(a.link);
   if (href) {
     window.open(href, '_blank', 'noopener,noreferrer');
@@ -1420,6 +2117,7 @@ function setMobileFeedsOpen(open) {
   const toggle = document.getElementById('mobile-feeds-link');
   const search = document.getElementById('mobile-feed-search');
   if (!panel || !toggle || !search) return;
+  if (open) closeProfileMenus();
   panel.hidden = !open;
   toggle.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -1436,6 +2134,7 @@ function setMobileMoreOpen(open) {
   const menu = document.getElementById('mobile-more-menu');
   const toggle = document.getElementById('mobile-more-toggle');
   if (!menu || !toggle) return;
+  if (open) closeProfileMenus();
   menu.hidden = !open;
   toggle.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -1448,6 +2147,7 @@ function setMobileSearchOpen(open) {
   const toggle = document.getElementById('mobile-search-toggle');
   const input = document.getElementById('mobile-search');
   if (!panel || !toggle || !input) return;
+  if (open) closeProfileMenus();
   panel.hidden = !open;
   toggle.setAttribute('aria-expanded', String(open));
   if (open) {
@@ -1489,7 +2189,7 @@ function refreshAllArticles() {
 }
 
 function refreshSelection(key) {
-  if (key === 'all') return refreshAllArticles();
+  if (['all', 'read-later'].includes(key)) return refreshAllArticles();
   if (feedRefreshPromises.has(key)) return feedRefreshPromises.get(key);
   const promise = (async () => {
     await api.refreshFeed(key);
@@ -1579,12 +2279,13 @@ document.addEventListener('touchcancel', resetPullRefresh, { passive: true });
 // ---------- events ----------
 document.getElementById('sidebar-feed-search').addEventListener('input', renderSidebar);
 document.getElementById('sidebar-manage-feeds').addEventListener('click', navigateToManager);
+document.getElementById('feed-manager-add').addEventListener('submit', submitCustomFeed);
 
 document.getElementById('refresh-all').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   const selected = state.selected;
   btn.disabled = true;
-  btn.textContent = '⟳ ' + t(selected === 'all' ? 'refreshingAll' : 'refreshingFeed');
+  btn.textContent = '⟳ ' + t(['all', 'read-later'].includes(selected) ? 'refreshingAll' : 'refreshingFeed');
   try {
     await refreshSelection(selected);
   } catch {
@@ -1602,6 +2303,7 @@ document.getElementById('search').addEventListener('input', (e) => {
 });
 
 document.getElementById('mobile-search-toggle').addEventListener('click', () => {
+  if (window.location.pathname === '/manage-feeds') return;
   setMobileMoreOpen(false);
   setMobileFeedsOpen(false);
   setMobileSearchOpen(!mobileSearchIsOpen());
@@ -1625,34 +2327,7 @@ document.getElementById('mobile-manage-feeds').addEventListener('click', () => {
 
 document.getElementById('feed-manager-back').addEventListener('click', navigateToReader);
 document.getElementById('feed-manager-search').addEventListener('input', renderFeedManager);
-document.getElementById('feed-manager-url').addEventListener('input', function () {
-  document.getElementById('feed-manager-add-button').hidden = !this.value.trim();
-});
 window.addEventListener('popstate', applyRoute);
-
-document.getElementById('feed-manager-add-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const input = document.getElementById('feed-manager-url');
-  const button = document.getElementById('feed-manager-add-button');
-  const error = document.getElementById('feed-manager-error');
-  const url = input.value.trim();
-  if (!url) return;
-  error.hidden = true;
-  button.disabled = true;
-  const response = await api.addFeed(url);
-  button.disabled = false;
-  if (response.ok) {
-    input.value = '';
-    button.hidden = true;
-    await loadAll();
-    renderFeedManager();
-    return;
-  }
-  let message = t('couldNotAddFeed');
-  try { message = await response.json(); } catch { try { message = await response.text(); } catch { /* ignore */ } }
-  error.textContent = localizeFeedError((typeof message === 'string' && message) ? message : t('couldNotAddFeed'));
-  error.hidden = false;
-});
 
 document.getElementById('mobile-home').addEventListener('click', async () => {
   if (window.location.pathname === '/manage-feeds') {
@@ -1716,15 +2391,62 @@ window.addEventListener('resize', updateMobileHeaderOnScroll, { passive: true })
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+document.getElementById('profile-button').addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleProfileMenu('profile-menu', 'profile-button');
+});
+document.getElementById('mobile-profile-button').addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleProfileMenu('mobile-profile-menu', 'mobile-profile-button');
+});
+for (const menu of document.querySelectorAll('.profile-menu')) {
+  menu.addEventListener('click', async (event) => {
+    const action = event.target.closest('[data-auth-action]')?.dataset.authAction;
+    if (action === 'login' || action === 'register') openAuthModal(action);
+    if (action === 'logout') await logout();
+  });
+}
+document.getElementById('auth-modal-close').addEventListener('click', closeAuthModal);
+document.getElementById('auth-modal-backdrop').addEventListener('click', closeAuthModal);
+document.getElementById('auth-gate-close').addEventListener('click', () => closeSubscriptionPrompt());
+document.getElementById('auth-gate-backdrop').addEventListener('click', () => closeSubscriptionPrompt());
+document.getElementById('auth-gate-dismiss').addEventListener('click', () => closeSubscriptionPrompt());
+document.getElementById('auth-gate-login').addEventListener('click', () => {
+  closeSubscriptionPrompt(false);
+  openAuthModal('login');
+});
+document.getElementById('auth-gate-register').addEventListener('click', () => {
+  closeSubscriptionPrompt(false);
+  openAuthModal('register');
+});
+document.getElementById('auth-switch').addEventListener('click', () => {
+  state.auth.mode = state.auth.mode === 'register' ? 'login' : 'register';
+  document.getElementById('auth-error').hidden = true;
+  updateAuthModalText();
+});
+document.getElementById('auth-form').addEventListener('submit', submitAuthForm);
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   closeModal();
+  closeAuthModal();
+  closeSubscriptionPrompt();
+  closeProfileMenus();
   if (mobileSearchIsOpen()) setMobileSearchOpen(false);
   if (mobileMoreIsOpen()) setMobileMoreOpen(false);
   if (mobileFeedsIsOpen()) setMobileFeedsOpen(false);
 });
 
 document.addEventListener('click', (e) => {
+  for (const [menuId, buttonId] of [
+    ['profile-menu', 'profile-button'],
+    ['mobile-profile-menu', 'mobile-profile-button'],
+  ]) {
+    const menu = document.getElementById(menuId);
+    const button = document.getElementById(buttonId);
+    if (!menu.hidden && !menu.contains(e.target) && !button.contains(e.target)) {
+      setProfileMenuOpen(menuId, buttonId, false);
+    }
+  }
   if (mobileMoreIsOpen()) {
     const menu = document.getElementById('mobile-more-menu');
     const toggle = document.getElementById('mobile-more-toggle');
@@ -1738,7 +2460,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ---------- init ----------
-(function init() {
+(async function init() {
   let theme = 'light';
   let lang = 'en';
   try { theme = localStorage.getItem('rss-theme') || 'light'; } catch { /* ignore */ }
@@ -1747,5 +2469,6 @@ document.addEventListener('click', (e) => {
   applyLanguage(lang, false);
   updateScrollTopButton();
   applyRoute();
-  loadAll();
+  await loadAuthState();
+  await loadAll();
 })();

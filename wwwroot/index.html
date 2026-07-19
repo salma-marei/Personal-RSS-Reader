@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Feed Reader</title>
-  <link rel="stylesheet" href="styles.css?v=20260715-53">
+  <link rel="stylesheet" href="styles.css?v=20260720-79">
 </head>
 <body>
   <div class="app">
@@ -21,7 +21,7 @@
         <input id="sidebar-feed-search" type="search" placeholder="Find a feed">
       </div>
       <nav class="feed-nav" id="feed-nav"></nav>
-      <button id="sidebar-manage-feeds" class="sidebar-manage-feeds" type="button">Manage all feeds →</button>
+      <button id="sidebar-manage-feeds" class="sidebar-manage-feeds" type="button">Discover Feeds →</button>
       <button id="refresh-all" class="refresh-all">⟳ Refresh all</button>
     </aside>
 
@@ -38,7 +38,30 @@
           <button class="mobile-search-toggle" id="mobile-search-toggle" type="button" aria-label="Search" aria-expanded="false" aria-controls="mobile-search-panel">
             <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </button>
+          <button class="profile-button mobile-profile-button" id="mobile-profile-button" type="button" aria-label="Account" aria-expanded="false" aria-controls="mobile-profile-menu">
+            <svg class="profile-guest-icon ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <span class="profile-initial" hidden></span>
+          </button>
           <button class="mobile-more-toggle" id="mobile-more-toggle" type="button" aria-label="More options" aria-expanded="false" aria-controls="mobile-more-menu">•••</button>
+        </div>
+      </div>
+      <div class="profile-menu mobile-profile-menu" id="mobile-profile-menu" hidden>
+        <div class="profile-menu-guest">
+          <p class="profile-menu-title">Welcome to Feed Reader</p>
+          <p class="profile-menu-description">Sign in to start building your personal reader.</p>
+          <button class="profile-primary-action" data-auth-action="login" type="button">Sign in</button>
+          <button class="profile-secondary-action" data-auth-action="register" type="button">Create account</button>
+        </div>
+        <div class="profile-menu-user" hidden>
+          <div class="profile-identity">
+            <span class="profile-menu-avatar"></span>
+            <span class="profile-menu-email"></span>
+          </div>
+          <div class="profile-menu-divider"></div>
+          <button class="profile-signout" data-auth-action="logout" type="button">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
+            <span>Sign out</span>
+          </button>
         </div>
       </div>
       <div class="mobile-more-menu" id="mobile-more-menu" hidden>
@@ -55,7 +78,7 @@
           <input id="mobile-feed-search" type="search" placeholder="Find a feed">
         </div>
         <div class="mobile-quick-feeds" id="mobile-quick-feeds"></div>
-        <button class="mobile-manage-feeds" id="mobile-manage-feeds" type="button">Manage all feeds →</button>
+        <button class="mobile-manage-feeds" id="mobile-manage-feeds" type="button">Discover Feeds →</button>
       </div>
       <div class="mobile-search-panel" id="mobile-search-panel" hidden>
         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -73,7 +96,10 @@
 
     <main class="main">
       <header class="main-header">
-        <h1 class="view-title"><span id="view-name">All Feeds</span> <span class="view-count" id="view-count"></span></h1>
+        <div class="view-heading">
+          <h1 class="view-title"><span id="view-name">All Feeds</span> <span class="view-count" id="view-count"></span></h1>
+          <button id="feed-subscription-button" class="feed-subscription-button" type="button" hidden></button>
+        </div>
         <div class="header-controls">
           <button id="catch-me-up" class="ctl-btn catch-me-up icon-label" type="button"><span class="ai-badge" aria-hidden="true">AI</span><span>Catch Me Up</span></button>
           <div class="search">
@@ -82,6 +108,31 @@
           </div>
           <button id="lang-toggle" class="ctl-btn" title="Switch language">AR</button>
           <button id="theme-toggle" class="ctl-btn" title="Toggle dark mode">☾</button>
+          <div class="profile-control">
+            <button class="profile-button" id="profile-button" type="button" aria-label="Account" aria-expanded="false" aria-controls="profile-menu">
+              <svg class="profile-guest-icon ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span class="profile-initial" hidden></span>
+            </button>
+            <div class="profile-menu" id="profile-menu" hidden>
+              <div class="profile-menu-guest">
+                <p class="profile-menu-title">Welcome to Feed Reader</p>
+                <p class="profile-menu-description">Sign in to start building your personal reader.</p>
+                <button class="profile-primary-action" data-auth-action="login" type="button">Sign in</button>
+                <button class="profile-secondary-action" data-auth-action="register" type="button">Create account</button>
+              </div>
+              <div class="profile-menu-user" hidden>
+                <div class="profile-identity">
+                  <span class="profile-menu-avatar"></span>
+                  <span class="profile-menu-email"></span>
+                </div>
+                <div class="profile-menu-divider"></div>
+                <button class="profile-signout" data-auth-action="logout" type="button">
+                  <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -95,15 +146,16 @@
       <div class="feed-manager-heading">
         <button class="feed-manager-back" id="feed-manager-back" type="button">← Back</button>
         <div>
-          <h1 id="feed-manager-title">Manage Feeds</h1>
+          <h1 id="feed-manager-title">Discover Feeds</h1>
           <p id="feed-manager-subtitle">Add, find, or remove your subscriptions.</p>
         </div>
       </div>
-      <form class="feed-manager-add" id="feed-manager-add-form">
-        <input id="feed-manager-url" type="url" placeholder="Add feed URL…" required>
-        <button id="feed-manager-add-button" type="submit" aria-label="Add feed" hidden>+</button>
+      <p class="feed-manager-account-note" id="feed-manager-account-note"></p>
+      <form class="feed-manager-add" id="feed-manager-add" novalidate>
+        <input id="feed-manager-url" type="url" inputmode="url" autocomplete="url" placeholder="Add feed URL..." aria-label="Feed URL">
+        <button id="feed-manager-add-button" type="submit" aria-label="Add feed">+</button>
       </form>
-      <p class="add-error" id="feed-manager-error" hidden></p>
+      <p class="feed-manager-error" id="feed-manager-error" role="alert" hidden></p>
       <div class="feed-manager-search">
         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="feed-manager-search" type="search" placeholder="Search all feeds">
@@ -127,6 +179,52 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260715-48"></script>
+  <div class="auth-modal" id="auth-modal" hidden>
+    <div class="auth-modal-backdrop" id="auth-modal-backdrop"></div>
+    <section class="auth-modal-panel" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      <button class="auth-modal-close" id="auth-modal-close" type="button" aria-label="Close">×</button>
+      <div class="auth-modal-heading">
+        <h2 id="auth-modal-title">Sign in</h2>
+        <p id="auth-modal-subtitle">Continue building your personal reader.</p>
+      </div>
+      <form id="auth-form">
+        <label>
+          <span id="auth-email-label">Email</span>
+          <input id="auth-email-input" type="email" autocomplete="email" required>
+        </label>
+        <label>
+          <span id="auth-password-label">Password</span>
+          <input id="auth-password-input" type="password" autocomplete="current-password" minlength="8" required>
+          <small id="auth-password-help">Use at least 8 characters, including a letter and number.</small>
+        </label>
+        <label class="auth-remember" id="auth-remember-row">
+          <input id="auth-remember" type="checkbox">
+          <span id="auth-remember-label">Remember me for 30 days</span>
+        </label>
+        <p class="auth-error" id="auth-error" hidden></p>
+        <button class="auth-submit" id="auth-submit" type="submit">Sign in</button>
+      </form>
+      <button class="auth-switch" id="auth-switch" type="button">Need an account? Create one</button>
+    </section>
+  </div>
+
+  <div class="auth-gate-modal" id="auth-gate-modal" hidden>
+    <div class="auth-modal-backdrop" id="auth-gate-backdrop"></div>
+    <section class="auth-gate-panel" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
+      <button class="auth-modal-close" id="auth-gate-close" type="button" aria-label="Close">×</button>
+      <div class="auth-gate-icon" aria-hidden="true">
+        <svg class="ui-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      </div>
+      <h2 id="auth-gate-title">Create your personal feed</h2>
+      <p id="auth-gate-description">Sign in to subscribe to feeds and keep your reading list across devices.</p>
+      <button class="profile-primary-action" id="auth-gate-login" type="button">Sign in</button>
+      <button class="profile-secondary-action" id="auth-gate-register" type="button">Create account</button>
+      <button class="auth-gate-dismiss" id="auth-gate-dismiss" type="button">Not now</button>
+    </section>
+  </div>
+
+  <div class="subscription-toast" id="subscription-toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js?v=20260720-73"></script>
 </body>
 </html>

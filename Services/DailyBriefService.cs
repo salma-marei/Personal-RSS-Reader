@@ -135,12 +135,22 @@ public sealed class DailyBriefService(HttpClient httpClient, IConfiguration conf
         if (sections.Count == 0)
             throw new DailyBriefGenerationException("DeepSeek returned no summary sections.");
 
+        var citedUrls = sections
+            .SelectMany(section => section.Sources)
+            .Select(source => source.Url)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var citedArticles = selectedArticles
+            .Where(article => article.Link is not null && citedUrls.Contains(article.Link))
+            .GroupBy(article => article.Link, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+
         return new DailyBrief
         {
             Introduction = Truncate(generated.Introduction, 1500) ?? "",
             Sections = sections,
-            ArticleCount = selectedArticles.Count,
-            FeedCount = selectedArticles.Select(article => article.SourceFeedId).Distinct().Count(),
+            ArticleCount = citedArticles.Count,
+            FeedCount = citedArticles.Select(article => article.SourceFeedId).Distinct().Count(),
             GeneratedAt = DateTimeOffset.UtcNow
         };
     }

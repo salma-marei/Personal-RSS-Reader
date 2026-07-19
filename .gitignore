@@ -9,6 +9,10 @@ Data/
 .vs/
 *.user
 
+# Local coding-agent metadata
+.agents/
+skills-lock.json
+
 # Local secrets (use .NET User Secrets instead; these are extra safeguards)
 .env
 .env.*
