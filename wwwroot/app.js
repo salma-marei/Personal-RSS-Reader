@@ -463,7 +463,8 @@ async function logout() {
   state.auth.pendingSubscriptionId = null;
   state.auth.pendingFeedUrl = null;
   state.auth.pendingReadLaterArticle = null;
-  if (state.selected === 'read-later') state.selected = 'all';
+  state.selected = 'all';
+  latestSubscriptionId = null;
   closeProfileMenus();
   updateAuthUi();
   renderSubscriptionControls();
@@ -671,6 +672,8 @@ async function followTopicFeed() {
     await loadSubscriptions();
     await loadAll();
     input.value = '';
+    document.getElementById('topic-feed-result').hidden = true;
+    document.getElementById('topic-feed-result-query').textContent = '';
     if (payload.feed?.id) {
       state.selected = payload.feed.id;
       navigateToReader();
@@ -715,6 +718,11 @@ function openExplore(query = '') {
   setFeedManagerTab('discover');
   const input = document.getElementById('topic-feed-query');
   input.value = query;
+  if (!query) {
+    document.getElementById('topic-feed-result').hidden = true;
+    document.getElementById('topic-feed-result-query').textContent = '';
+    document.getElementById('topic-feed-error').hidden = true;
+  }
   renderFeedManager();
   if (query) submitTopicFeed(new Event('submit'));
   requestAnimationFrame(() => input.focus());
