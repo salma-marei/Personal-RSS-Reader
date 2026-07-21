@@ -5,6 +5,11 @@ const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
   }),
+  addTopicFeed: (query, language, country) => fetch('/feeds/topics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, language, country })
+  }),
   refreshFeed: (id) => fetch('/feeds/' + id + '/refresh', { method: 'POST' }),
   refreshAll: () => fetch('/feeds/refresh', { method: 'POST' }),
   river: () => fetch('/river').then(r => r.json()),
@@ -115,8 +120,8 @@ const i18n = {
     addedToMyFeeds: '{name} added to My Feeds',
     myFeedsEmpty: 'You have not subscribed to any feeds yet.',
     noSuggestedFeeds: 'No suggested feeds match your search.',
-    discoverFeeds: 'Discover Feeds',
-    manageDiscoverFeeds: 'Manage & Discover Feeds',
+    discoverFeeds: 'Explore Feeds',
+    manageDiscoverFeeds: 'Manage & Explore Feeds',
     unsubscribeConfirm: 'Unsubscribe from "{name}"?',
     createPersonalFeed: 'Create your personal feed',
     subscriptionPrompt: 'Sign in to subscribe to feeds and keep your reading list across devices.',
@@ -141,6 +146,7 @@ const i18n = {
     takesFewSeconds: 'This may take a few seconds.',
     untitled: '(untitled)',
     urlRequired: 'URL is required.',
+    topicRequired: 'Enter a news topic to follow.',
     units: { m: 'm ago', h: 'h ago', d: 'd ago', mo: 'mo ago', y: 'y ago' },
   },
   ar: {
@@ -625,6 +631,95 @@ async function submitCustomFeed(event) {
   await addCustomFeed(url);
 }
 
+async function submitTopicFeed(event) {
+  event.preventDefault();
+  const input = document.getElementById('topic-feed-query');
+  const error = document.getElementById('topic-feed-error');
+  const query = input.value.trim();
+
+  error.hidden = true;
+  if (!query) {
+    error.textContent = t('topicRequired');
+    error.hidden = false;
+    return;
+  }
+
+  document.getElementById('topic-feed-result-query').textContent = query;
+  document.getElementById('topic-feed-result').hidden = false;
+  updateTopicLocaleSummary();
+}
+
+async function followTopicFeed() {
+  const input = document.getElementById('topic-feed-query');
+  const language = document.getElementById('topic-feed-language');
+  const country = document.getElementById('topic-feed-country');
+  const button = document.getElementById('topic-feed-submit');
+  const error = document.getElementById('topic-feed-error');
+  const query = input.value.trim();
+
+  if (!state.auth.user) {
+    openSubscriptionPrompt(null);
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    const response = await api.addTopicFeed(query, language.value, country.value);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || t('couldNotAddFeed'));
+
+    await loadSubscriptions();
+    await loadAll();
+    input.value = '';
+    if (payload.feed?.id) {
+      state.selected = payload.feed.id;
+      navigateToReader();
+      renderSidebar();
+      renderCards();
+    }
+  } catch (topicError) {
+    error.textContent = topicError instanceof Error ? topicError.message : t('couldNotAddFeed');
+    error.hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function updateTopicLocaleSummary() {
+  const language = document.getElementById('topic-feed-language');
+  const country = document.getElementById('topic-feed-country');
+  const languageName = language.options[language.selectedIndex].text;
+  const countryName = country.options[country.selectedIndex].text;
+  document.getElementById('topic-feed-locale-summary').textContent = `${languageName} · ${countryName}`;
+}
+
+function previewTopicFeed() {
+  const query = document.getElementById('topic-feed-query').value.trim();
+  if (!query) return;
+  window.open(`https://news.google.com/search?q=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+}
+
+function setFeedManagerTab(tab) {
+  const discovering = tab === 'discover';
+  document.getElementById('feed-manager-manage-panel').hidden = discovering;
+  document.getElementById('feed-manager-discover-panel').hidden = !discovering;
+  for (const [name, selected] of [['manage', !discovering], ['discover', discovering]]) {
+    const button = document.getElementById(`feed-manager-${name}-tab`);
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-selected', String(selected));
+  }
+}
+
+function openExplore(query = '') {
+  navigateToManager();
+  setFeedManagerTab('discover');
+  const input = document.getElementById('topic-feed-query');
+  input.value = query;
+  renderFeedManager();
+  if (query) submitTopicFeed(new Event('submit'));
+  requestAnimationFrame(() => input.focus());
+}
+
 function profileMenuIsOpen(menuId) {
   return !document.getElementById(menuId).hidden;
 }
@@ -887,6 +982,8 @@ function applyLanguage(lang, rerender) {
   if (managerSubtitle) managerSubtitle.textContent = state.lang === 'ar' ? 'أضف اشتراكاتك أو ابحث عنها أو احذفها.' : 'Add, find, or remove your subscriptions.';
   const managerBack = document.getElementById('feed-manager-back');
   if (managerBack) managerBack.textContent = state.lang === 'ar' ? 'رجوع →' : '← Back';
+  const topicLanguage = document.getElementById('topic-feed-language');
+  if (topicLanguage && !topicLanguage.dataset.userSelected) topicLanguage.value = state.lang;
   const managerUrl = document.getElementById('feed-manager-url');
   if (managerUrl) managerUrl.placeholder = t('addFeedUrl');
   const managerAdd = document.getElementById('feed-manager-add-button');
@@ -1628,31 +1725,33 @@ function createFeedManagerSection(title, feeds, subscribed, capped = false) {
 }
 
 function renderFeedManager() {
-  const list = document.getElementById('feed-manager-list');
-  const search = document.getElementById('feed-manager-search');
-  if (!list || !search) return;
-  const query = search.value.trim().toLocaleLowerCase();
-  const matchesQuery = feed => !query ||
+  const manageList = document.getElementById('feed-manager-manage-list');
+  const discoverList = document.getElementById('feed-manager-list');
+  const manageQuery = document.getElementById('feed-manager-manage-search').value.trim().toLocaleLowerCase();
+  const discoverQuery = document.getElementById('topic-feed-query').value.trim().toLocaleLowerCase();
+  const matchesQuery = (feed, query) => !query ||
     feed.name.toLocaleLowerCase().includes(query) ||
     (feed.url || '').toLocaleLowerCase().includes(query);
   const subscribedFeeds = state.auth.user
-    ? state.feeds.filter(feed => isSubscribed(feed.id) && matchesQuery(feed))
+    ? state.feeds.filter(feed => isSubscribed(feed.id) && matchesQuery(feed, manageQuery))
     : [];
   if (latestSubscriptionId) {
     subscribedFeeds.sort((a, b) => Number(b.id === latestSubscriptionId) - Number(a.id === latestSubscriptionId));
   }
   const suggestedFeeds = state.feeds.filter(feed =>
-    feed.isSuggested && !isSubscribed(feed.id) && matchesQuery(feed)
+    feed.isSuggested && !isSubscribed(feed.id) && matchesQuery(feed, discoverQuery)
   );
   const note = document.getElementById('feed-manager-account-note');
   if (note) note.textContent = t(state.auth.user ? 'userManageNote' : 'guestManageNote');
 
-  list.innerHTML = '';
-  const sections = [];
-  if (state.auth.user) sections.push(createFeedManagerSection(t('myFeeds'), subscribedFeeds, true, true));
-  sections.push(createFeedManagerSection(t('suggestedFeeds'), suggestedFeeds, false));
+  manageList.innerHTML = '';
+  discoverList.innerHTML = '';
+  const sections = [
+    { target: manageList, ...createFeedManagerSection(t('myFeeds'), subscribedFeeds, true, true) },
+    { target: discoverList, ...createFeedManagerSection(t('suggestedFeeds'), suggestedFeeds, false) }
+  ];
   for (const managerSection of sections) {
-    list.append(managerSection.section);
+    managerSection.target.append(managerSection.section);
     const feeds = managerSection.subscribed ? subscribedFeeds : suggestedFeeds;
     if (!feeds.length) {
       const empty = document.createElement('p');
@@ -1849,9 +1948,40 @@ function renderSubscriptionOnboarding(cards) {
   const title = document.createElement('h2');
   title.textContent = t('welcomePersonalReader');
   const description = document.createElement('p');
-  description.textContent = t('chooseStartingFeeds');
-  intro.append(title, description);
+  description.textContent = state.lang === 'ar'
+    ? 'ابحث عن موضوع أو منشور لبدء بناء قارئك.'
+    : 'Search for a topic or publication.';
+  const search = document.createElement('form');
+  search.className = 'onboarding-explore-search';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.placeholder = state.lang === 'ar' ? 'الذكاء الاصطناعي، بي بي سي، كرة القدم...' : 'AI, BBC, Football...';
+  searchInput.setAttribute('aria-label', description.textContent);
+  search.addEventListener('submit', event => {
+    event.preventDefault();
+    openExplore(searchInput.value.trim());
+  });
+  search.appendChild(searchInput);
+  const topics = document.createElement('div');
+  topics.className = 'onboarding-topic-chips';
+  topics.hidden = true;
+  for (const topic of ['Technology', 'Science', 'Football', 'Gaming', 'Business', 'Politics']) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.textContent = topic;
+    chip.addEventListener('click', () => openExplore(topic));
+    topics.appendChild(chip);
+  }
+  search.appendChild(topics);
+  intro.append(title, description, search);
+  searchInput.addEventListener('focus', () => { topics.hidden = false; });
+  searchInput.addEventListener('click', () => { topics.hidden = false; });
   cards.appendChild(intro);
+
+  const suggestedHeading = document.createElement('h3');
+  suggestedHeading.className = 'onboarding-suggested-heading';
+  suggestedHeading.textContent = t('suggestedFeeds');
+  cards.appendChild(suggestedHeading);
 
   for (const feed of state.feeds.filter(item => item.isSuggested)) {
     const card = document.createElement('article');
@@ -2284,7 +2414,38 @@ document.addEventListener('touchcancel', resetPullRefresh, { passive: true });
 // ---------- events ----------
 document.getElementById('sidebar-feed-search').addEventListener('input', renderSidebar);
 document.getElementById('sidebar-manage-feeds').addEventListener('click', navigateToManager);
+document.getElementById('sidebar-follow-topic').addEventListener('click', () => openExplore());
+document.getElementById('mobile-follow-topic').addEventListener('click', () => {
+  setMobileFeedsOpen(false);
+  openExplore();
+});
 document.getElementById('feed-manager-add').addEventListener('submit', submitCustomFeed);
+document.getElementById('topic-feed-form').addEventListener('submit', submitTopicFeed);
+let exploreSearchTimer = null;
+document.getElementById('topic-feed-query').addEventListener('input', event => {
+  clearTimeout(exploreSearchTimer);
+  document.getElementById('topic-feed-error').hidden = true;
+  renderFeedManager();
+  const query = event.currentTarget.value.trim();
+  if (!query) {
+    document.getElementById('topic-feed-result').hidden = true;
+    return;
+  }
+  exploreSearchTimer = setTimeout(() => submitTopicFeed(new Event('submit')), 220);
+});
+document.getElementById('topic-feed-submit').addEventListener('click', followTopicFeed);
+document.getElementById('topic-feed-preview').addEventListener('click', previewTopicFeed);
+document.getElementById('topic-feed-change').addEventListener('click', () => {
+  const settings = document.getElementById('topic-feed-settings');
+  settings.hidden = !settings.hidden;
+});
+document.getElementById('topic-feed-language').addEventListener('change', event => {
+  event.currentTarget.dataset.userSelected = 'true';
+  updateTopicLocaleSummary();
+});
+document.getElementById('topic-feed-country').addEventListener('change', updateTopicLocaleSummary);
+document.getElementById('feed-manager-manage-tab').addEventListener('click', () => setFeedManagerTab('manage'));
+document.getElementById('feed-manager-discover-tab').addEventListener('click', () => setFeedManagerTab('discover'));
 
 document.getElementById('refresh-all').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
@@ -2331,7 +2492,7 @@ document.getElementById('mobile-manage-feeds').addEventListener('click', () => {
 });
 
 document.getElementById('feed-manager-back').addEventListener('click', navigateToReader);
-document.getElementById('feed-manager-search').addEventListener('input', renderFeedManager);
+document.getElementById('feed-manager-manage-search').addEventListener('input', renderFeedManager);
 window.addEventListener('popstate', applyRoute);
 
 document.getElementById('mobile-home').addEventListener('click', async () => {

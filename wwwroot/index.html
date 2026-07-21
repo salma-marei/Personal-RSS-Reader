@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Feed Reader</title>
-  <link rel="stylesheet" href="styles.css?v=20260720-79">
+  <link rel="stylesheet" href="styles.css?v=20260721-84">
 </head>
 <body>
   <div class="app">
@@ -21,6 +21,7 @@
         <input id="sidebar-feed-search" type="search" placeholder="Find a feed">
       </div>
       <nav class="feed-nav" id="feed-nav"></nav>
+      <button id="sidebar-follow-topic" class="sidebar-follow-topic" type="button">Follow Topic +</button>
       <button id="sidebar-manage-feeds" class="sidebar-manage-feeds" type="button">Discover Feeds →</button>
       <button id="refresh-all" class="refresh-all">⟳ Refresh all</button>
     </aside>
@@ -78,6 +79,7 @@
           <input id="mobile-feed-search" type="search" placeholder="Find a feed">
         </div>
         <div class="mobile-quick-feeds" id="mobile-quick-feeds"></div>
+        <button class="mobile-follow-topic" id="mobile-follow-topic" type="button">Follow Topic +</button>
         <button class="mobile-manage-feeds" id="mobile-manage-feeds" type="button">Discover Feeds →</button>
       </div>
       <div class="mobile-search-panel" id="mobile-search-panel" hidden>
@@ -150,17 +152,61 @@
           <p id="feed-manager-subtitle">Add, find, or remove your subscriptions.</p>
         </div>
       </div>
-      <p class="feed-manager-account-note" id="feed-manager-account-note"></p>
-      <form class="feed-manager-add" id="feed-manager-add" novalidate>
-        <input id="feed-manager-url" type="url" inputmode="url" autocomplete="url" placeholder="Add feed URL..." aria-label="Feed URL">
-        <button id="feed-manager-add-button" type="submit" aria-label="Add feed">+</button>
-      </form>
-      <p class="feed-manager-error" id="feed-manager-error" role="alert" hidden></p>
-      <div class="feed-manager-search">
-        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="feed-manager-search" type="search" placeholder="Search all feeds">
+      <div class="feed-manager-tabs" role="tablist" aria-label="Feed tools">
+        <button id="feed-manager-manage-tab" class="feed-manager-tab active" type="button" role="tab" aria-selected="true" aria-controls="feed-manager-manage-panel">Manage</button>
+        <button id="feed-manager-discover-tab" class="feed-manager-tab" type="button" role="tab" aria-selected="false" aria-controls="feed-manager-discover-panel">Explore</button>
       </div>
-      <div class="feed-manager-list" id="feed-manager-list"></div>
+
+      <section id="feed-manager-manage-panel" class="feed-manager-panel" role="tabpanel" aria-labelledby="feed-manager-manage-tab">
+        <p class="feed-manager-account-note" id="feed-manager-account-note"></p>
+        <form class="feed-manager-add" id="feed-manager-add" novalidate>
+          <input id="feed-manager-url" type="url" inputmode="url" autocomplete="url" placeholder="Add RSS or Atom URL..." aria-label="Feed URL">
+          <button id="feed-manager-add-button" type="submit" aria-label="Add feed">+</button>
+        </form>
+        <p class="feed-manager-error" id="feed-manager-error" role="alert" hidden></p>
+        <div class="feed-manager-search">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="feed-manager-manage-search" type="search" placeholder="Search your subscriptions">
+        </div>
+        <div class="feed-manager-list" id="feed-manager-manage-list"></div>
+      </section>
+
+      <section id="feed-manager-discover-panel" class="feed-manager-panel" role="tabpanel" aria-labelledby="feed-manager-discover-tab" hidden>
+        <form class="topic-feed-search" id="topic-feed-form" novalidate>
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="topic-feed-query" type="search" maxlength="120" autocomplete="off" placeholder="Search topics, publications, or interests" aria-label="News topic">
+        </form>
+        <p class="feed-manager-error" id="topic-feed-error" role="alert" hidden></p>
+        <article class="topic-feed-result" id="topic-feed-result" hidden>
+          <div>
+            <span class="topic-result-label">Topic</span>
+            <h2>Follow “<span id="topic-feed-result-query"></span>”</h2>
+            <p>News from multiple publishers.</p>
+            <p class="topic-feed-locale"><span id="topic-feed-locale-summary">English · Egypt</span> · <button id="topic-feed-change" type="button">Change</button></p>
+          </div>
+          <div class="topic-feed-settings" id="topic-feed-settings" hidden>
+            <label>Language
+              <select id="topic-feed-language">
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+              </select>
+            </label>
+            <label>Region
+              <select id="topic-feed-country">
+                <option value="EG">Egypt</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+              </select>
+            </label>
+          </div>
+          <div class="topic-feed-actions">
+            <button class="topic-feed-preview" id="topic-feed-preview" type="button">Preview articles</button>
+            <button class="topic-feed-follow" id="topic-feed-submit" type="button">Follow topic</button>
+          </div>
+        </article>
+        <p class="topic-feed-note">Topic feeds may include similar reports from different publishers.</p>
+        <div class="feed-manager-list" id="feed-manager-list"></div>
+      </section>
     </main>
   </div>
 
@@ -225,6 +271,6 @@
 
   <div class="subscription-toast" id="subscription-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="app.js?v=20260720-74"></script>
+  <script src="app.js?v=20260721-84"></script>
 </body>
 </html>

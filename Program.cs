@@ -293,6 +293,43 @@ app.MapPost("/feeds", async (
         : Results.Ok(response);
 }).RequireAuthorization();
 
+app.MapPost("/feeds/topics", async (
+    CreateTopicFeedRequest request,
+    HttpContext httpContext,
+    UserManager<ApplicationUser> userManager,
+    CustomFeedService customFeeds,
+    CancellationToken ct) =>
+{
+    var user = await userManager.GetUserAsync(httpContext.User);
+    if (user is null)
+        return Results.Unauthorized();
+
+    string feedUrl;
+    try
+    {
+        feedUrl = GoogleNewsTopicFeed.CreateUrl(request.Query, request.Language, request.Country);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+
+    var result = await customFeeds.AddAndSubscribeAsync(user.Id, feedUrl, ct);
+    if (result.Feed is null)
+        return Results.BadRequest(new { error = result.Error });
+
+    var response = new
+    {
+        feed = result.Feed,
+        subscribed = true,
+        alreadySubscribed = result.AlreadySubscribed,
+        topic = request.Query.Trim()
+    };
+    return result.FeedCreated
+        ? Results.Created($"/feeds/{result.Feed.Id}", response)
+        : Results.Ok(response);
+}).RequireAuthorization();
+
 app.MapGet("/feeds/{id:guid}/articles", async (Guid id, FeedStorage storage, FeedArticleService articleService, ArticleCache cache, CancellationToken ct) =>
 {
     var feed = await storage.FindAsync(id, ct);
