@@ -100,6 +100,9 @@ const i18n = {
     retry: 'Retry',
     createAccount: 'Create account',
     signIn: 'Sign in',
+    continueWithGoogle: 'Continue with Google',
+    orContinueWithGoogle: 'or continue with Google',
+    googleAuthFailed: 'Google sign-in could not be completed. Please try again.',
     signOut: 'Sign out',
     email: 'Email',
     password: 'Password',
@@ -107,7 +110,7 @@ const i18n = {
     rememberMe: 'Remember me for 30 days',
     registerSubtitle: 'Create an account to start building your personal reader.',
     loginSubtitle: 'Continue building your personal reader.',
-    switchToRegister: 'Need an account? Create one',
+    switchToRegister: 'Don\'t have an account? Create one',
     switchToLogin: 'Already have an account? Sign in',
     authenticating: 'Please wait...',
     authFailed: 'Something went wrong. Please try again.',
@@ -154,6 +157,9 @@ const i18n = {
     suggestedFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a \u0645\u0642\u062a\u0631\u062d\u0629',
     createAccount: '\u0625\u0646\u0634\u0627\u0621 \u062d\u0633\u0627\u0628',
     signIn: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644',
+    continueWithGoogle: '\u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google',
+    orContinueWithGoogle: '\u0623\u0648 \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google',
+    googleAuthFailed: '\u062a\u0639\u0630\u0631 \u0625\u0643\u0645\u0627\u0644 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
     signOut: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c',
     email: '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
     password: '\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631',
@@ -376,6 +382,7 @@ function updateAuthModalText() {
   document.getElementById('auth-email-label').textContent = t('email');
   document.getElementById('auth-password-label').textContent = t('password');
   document.getElementById('auth-password-help').textContent = t('passwordHelp');
+  document.getElementById('auth-password-help').hidden = !registering;
   document.getElementById('auth-remember-label').textContent = t('rememberMe');
   document.getElementById('auth-remember-row').hidden = registering;
   document.getElementById('auth-submit').textContent =
@@ -384,6 +391,52 @@ function updateAuthModalText() {
     t(registering ? 'switchToLogin' : 'switchToRegister');
   document.getElementById('auth-password-input').autocomplete =
     registering ? 'new-password' : 'current-password';
+  document.getElementById('auth-google-label').textContent = t('continueWithGoogle');
+  document.getElementById('auth-divider-label').textContent = t('orContinueWithGoogle');
+}
+
+const pendingAuthStorageKey = 'rss-pending-auth-action';
+
+function beginGoogleSignIn() {
+  const pending = {
+    subscriptionId: state.auth.pendingSubscriptionId,
+    feedUrl: state.auth.pendingFeedUrl,
+    readLaterArticle: state.auth.pendingReadLaterArticle,
+  };
+  try {
+    if (pending.subscriptionId || pending.feedUrl || pending.readLaterArticle) {
+      sessionStorage.setItem(pendingAuthStorageKey, JSON.stringify(pending));
+    } else {
+      sessionStorage.removeItem(pendingAuthStorageKey);
+    }
+  } catch { /* continue without restoring the pending action */ }
+  const button = document.getElementById('auth-google');
+  button.disabled = true;
+  requestAnimationFrame(() => window.location.assign('/api/auth/google'));
+}
+
+async function restorePendingAuthAction() {
+  if (!state.auth.user) return;
+  let pending = null;
+  try {
+    pending = JSON.parse(sessionStorage.getItem(pendingAuthStorageKey) || 'null');
+    sessionStorage.removeItem(pendingAuthStorageKey);
+  } catch { /* ignore invalid or unavailable session storage */ }
+  if (!pending) return;
+  if (pending.subscriptionId) await subscribeToFeed(pending.subscriptionId);
+  if (pending.feedUrl) await addCustomFeed(pending.feedUrl);
+  if (pending.readLaterArticle) await setReadLater(pending.readLaterArticle, true);
+}
+
+function showGoogleAuthError() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('authError') !== 'google') return;
+  url.searchParams.delete('authError');
+  history.replaceState({}, '', url.pathname + url.search + url.hash);
+  openAuthModal('login');
+  const error = document.getElementById('auth-error');
+  error.textContent = t('googleAuthFailed');
+  error.hidden = false;
 }
 
 function openAuthModal(mode) {
@@ -2562,6 +2615,9 @@ document.getElementById('scroll-top').addEventListener('click', () => {
 window.addEventListener('scroll', updateScrollTopButton, { passive: true });
 window.addEventListener('scroll', updateMobileHeaderOnScroll, { passive: true });
 window.addEventListener('resize', updateMobileHeaderOnScroll, { passive: true });
+window.addEventListener('pageshow', () => {
+  document.getElementById('auth-google').disabled = false;
+});
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-backdrop').addEventListener('click', closeModal);
@@ -2599,6 +2655,7 @@ document.getElementById('auth-switch').addEventListener('click', () => {
   updateAuthModalText();
 });
 document.getElementById('auth-form').addEventListener('submit', submitAuthForm);
+document.getElementById('auth-google').addEventListener('click', beginGoogleSignIn);
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   closeModal();
@@ -2645,4 +2702,6 @@ document.addEventListener('click', (e) => {
   applyRoute();
   await loadAuthState();
   await loadAll();
+  await restorePendingAuthAction();
+  showGoogleAuthError();
 })();

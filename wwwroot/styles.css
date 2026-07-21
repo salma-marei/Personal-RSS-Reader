@@ -2095,7 +2095,14 @@ html[dir="rtl"] .card-main.rtl-card .card-text { padding-left: 38px; }
   background: transparent;
   border: 0;
   border-radius: 50%;
-  font-size: 24px;
+  font-size: 27px;
+  line-height: 1;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.auth-modal-close:hover {
+  color: var(--text, #0f172a);
+  background: rgb(148 163 184 / 12%);
 }
 
 .auth-modal-heading h2 {
@@ -2106,6 +2113,50 @@ html[dir="rtl"] .card-main.rtl-card .card-text { padding-left: 38px; }
 .auth-modal-heading p {
   margin: 0 0 22px;
   color: var(--muted, #64748b);
+}
+
+.auth-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  color: var(--text, #0f172a);
+  background: var(--main-bg);
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.auth-google:hover {
+  color: var(--text, #0f172a);
+  background: rgb(148 163 184 / 10%);
+}
+.auth-google:disabled { cursor: wait; opacity: 0.7; }
+.auth-google svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  flex: none;
+  transform: translateY(-0.5px);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  background: var(--border, #e2e8f0);
+  flex: 1;
 }
 
 #auth-form {
@@ -2145,10 +2196,12 @@ html[dir="rtl"] .card-main.rtl-card .card-text { padding-left: 38px; }
 .auth-remember {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--muted, #64748b);
   font-size: 13px;
 }
+
+.auth-remember input { width: 16px; height: 16px; }
 
 .auth-error {
   margin: 0;
@@ -2163,6 +2216,13 @@ html[dir="rtl"] .card-main.rtl-card .card-text { padding-left: 38px; }
   border: 0;
   border-radius: 10px;
   font-weight: 700;
+  transition: box-shadow 140ms ease, transform 140ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  cursor: pointer;
+  box-shadow: inset 0 0 0 999px rgb(255 255 255 / 12%);
+  transform: translateY(-1px);
 }
 
 .auth-submit:disabled {

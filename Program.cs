@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PersonalRssReader.Data;
@@ -36,6 +39,14 @@ builder.Services
     })
     .AddEntityFrameworkStores<ReaderDbContext>()
     .AddDefaultTokenProviders();
+builder.Services
+    .AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? string.Empty;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? string.Empty;
+        options.ClaimActions.MapJsonKey("urn:google:email_verified", "email_verified");
+    });
 builder.Services.AddAuthorization();
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -142,6 +153,73 @@ app.MapPost("/api/auth/logout", async (SignInManager<ApplicationUser> signInMana
 {
     await signInManager.SignOutAsync();
     return Results.NoContent();
+});
+
+app.MapGet("/api/auth/google", (
+    IConfiguration configuration,
+    SignInManager<ApplicationUser> signInManager) =>
+{
+    if (string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientId"]) ||
+        string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientSecret"]))
+    {
+        return Results.Problem(
+            "Google sign-in is not configured.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    var properties = signInManager.ConfigureExternalAuthenticationProperties(
+        GoogleDefaults.AuthenticationScheme,
+        "/api/auth/google/callback");
+    return Results.Challenge(properties, [GoogleDefaults.AuthenticationScheme]);
+});
+
+app.MapGet("/api/auth/google/callback", async (
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager) =>
+{
+    const string errorRedirect = "/?authError=google";
+    var info = await signInManager.GetExternalLoginInfoAsync();
+    if (info is null)
+        return Results.LocalRedirect(errorRedirect);
+
+    var signInResult = await signInManager.ExternalLoginSignInAsync(
+        info.LoginProvider,
+        info.ProviderKey,
+        isPersistent: true,
+        bypassTwoFactor: false);
+    if (signInResult.Succeeded)
+        return Results.LocalRedirect("/");
+
+    var email = info.Principal.FindFirstValue(ClaimTypes.Email)?.Trim();
+    var emailVerified = string.Equals(
+        info.Principal.FindFirstValue("urn:google:email_verified"),
+        "true",
+        StringComparison.OrdinalIgnoreCase);
+    if (string.IsNullOrWhiteSpace(email) || !emailVerified)
+        return Results.LocalRedirect(errorRedirect);
+
+    var user = await userManager.FindByEmailAsync(email);
+    if (user is null)
+    {
+        user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        var createResult = await userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+            return Results.LocalRedirect(errorRedirect);
+    }
+
+    var addLoginResult = await userManager.AddLoginAsync(user, info);
+    if (!addLoginResult.Succeeded)
+        return Results.LocalRedirect(errorRedirect);
+
+    await signInManager.SignInAsync(user, isPersistent: true);
+    return Results.LocalRedirect("/");
 });
 
 app.MapGet("/api/auth/me", async (
