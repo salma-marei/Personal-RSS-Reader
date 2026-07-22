@@ -60,7 +60,7 @@ public sealed class VerificationEmailSender(
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
                           <tr>
                             <td style="padding:24px 30px;background:#111827;color:#ffffff;font-size:18px;font-weight:700">
-                              <span style="display:inline-block;padding:4px 6px;border-radius:6px;background:#5eead4;color:#0f172a;font-size:11px;line-height:1;font-weight:800;vertical-align:2px">PR</span>&nbsp; Personal RSS Reader
+                              Personal RSS Reader
                             </td>
                           </tr>
                           <tr>
