@@ -35,7 +35,7 @@ builder.Services
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = false;
         options.Password.RequireNonAlphanumeric = false;
-        options.SignIn.RequireConfirmedEmail = false;
+        options.SignIn.RequireConfirmedEmail = true;
     })
     .AddEntityFrameworkStores<ReaderDbContext>()
     .AddDefaultTokenProviders();
@@ -48,6 +48,11 @@ builder.Services
         options.ClaimActions.MapJsonKey("urn:google:email_verified", "email_verified");
     });
 builder.Services.AddAuthorization();
+builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection(SendGridOptions.SectionName));
+builder.Services.AddScoped<IVerificationEmailSender, VerificationEmailSender>();
+builder.Services.AddScoped<IPasswordHasher<EmailVerificationCode>, PasswordHasher<EmailVerificationCode>>();
+builder.Services.AddScoped<EmailVerificationService>();
+builder.Services.AddHostedService<UnverifiedAccountCleanupService>();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "PersonalRssReader.Auth";
@@ -100,7 +105,8 @@ app.UseAuthorization();
 app.MapPost("/api/auth/register", async (
     RegisterRequest request,
     UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager) =>
+    EmailVerificationService verification,
+    CancellationToken ct) =>
 {
     var email = request.Email.Trim();
     if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(request.Password))
@@ -108,6 +114,40 @@ app.MapPost("/api/auth/register", async (
         {
             ["credentials"] = ["Email and password are required."]
         });
+
+    if (!verification.IsConfigured)
+        return Results.Problem(
+            "Email verification is not configured.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    var existingUser = await userManager.FindByEmailAsync(email);
+    if (existingUser is not null && !existingUser.EmailConfirmed)
+    {
+        if (!await userManager.CheckPasswordAsync(existingUser, request.Password))
+        {
+            return Results.Json(new
+            {
+                error = "This email is awaiting verification. Sign in with the password you originally chose to continue."
+            }, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        try
+        {
+            var resent = await verification.SendAsync(existingUser, ct);
+            return Results.Accepted(value: new
+            {
+                requiresVerification = true,
+                email,
+                retryAfterSeconds = resent.RetryAfterSeconds
+            });
+        }
+        catch
+        {
+            return Results.Problem(
+                "The verification email could not be sent. Please try again.",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
 
     var user = new ApplicationUser
     {
@@ -120,14 +160,31 @@ app.MapPost("/api/auth/register", async (
     if (!result.Succeeded)
         return IdentityValidationProblem(result);
 
-    await signInManager.SignInAsync(user, isPersistent: false);
-    return Results.Ok(AuthResponse(user));
+    try
+    {
+        var sent = await verification.SendAsync(user, ct);
+        return Results.Accepted(value: new
+        {
+            requiresVerification = true,
+            email,
+            retryAfterSeconds = sent.RetryAfterSeconds
+        });
+    }
+    catch
+    {
+        await userManager.DeleteAsync(user);
+        return Results.Problem(
+            "The verification email could not be sent. Please try again.",
+            statusCode: StatusCodes.Status502BadGateway);
+    }
 });
 
 app.MapPost("/api/auth/login", async (
     LoginRequest request,
     UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager) =>
+    SignInManager<ApplicationUser> signInManager,
+    EmailVerificationService verification,
+    CancellationToken ct) =>
 {
     var email = request.Email.Trim();
     var user = await userManager.FindByEmailAsync(email);
@@ -135,6 +192,27 @@ app.MapPost("/api/auth/login", async (
         return Results.Json(
             new { error = "Invalid email or password." },
             statusCode: StatusCodes.Status401Unauthorized);
+
+    if (!await userManager.CheckPasswordAsync(user, request.Password))
+        return Results.Json(
+            new { error = "Invalid email or password." },
+            statusCode: StatusCodes.Status401Unauthorized);
+
+    if (!user.EmailConfirmed)
+    {
+        if (!verification.IsConfigured)
+            return Results.Problem(
+                "Email verification is not configured.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        var sent = await verification.SendAsync(user, ct);
+        return Results.Json(new
+        {
+            error = "Verify your email before signing in.",
+            requiresVerification = true,
+            email,
+            retryAfterSeconds = sent.RetryAfterSeconds
+        }, statusCode: StatusCodes.Status403Forbidden);
+    }
 
     var result = await signInManager.PasswordSignInAsync(
         user,
@@ -147,6 +225,67 @@ app.MapPost("/api/auth/login", async (
             statusCode: StatusCodes.Status401Unauthorized);
 
     return Results.Ok(AuthResponse(user));
+});
+
+app.MapPost("/api/auth/verify-email", async (
+    VerifyEmailRequest request,
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
+    EmailVerificationService verification,
+    CancellationToken ct) =>
+{
+    var email = request.Email.Trim();
+    var code = request.Code.Trim();
+    if (code.Length != 6 || code.Any(character => !char.IsAsciiDigit(character)))
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["code"] = ["Enter the six-digit code from your email."]
+        });
+
+    var user = await userManager.FindByEmailAsync(email);
+    if (user is null || user.EmailConfirmed)
+        return Results.Json(
+            new { error = "This verification code is invalid or expired." },
+            statusCode: StatusCodes.Status400BadRequest);
+
+    var result = await verification.VerifyAsync(user, code, ct);
+    if (result != VerificationResult.Succeeded)
+    {
+        var message = result switch
+        {
+            VerificationResult.TooManyAttempts => "Too many attempts. Request a new code.",
+            VerificationResult.Expired => "This code has expired. Request a new one.",
+            _ => "That verification code is incorrect."
+        };
+        return Results.Json(new { error = message }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    await signInManager.SignInAsync(user, isPersistent: false);
+    return Results.Ok(AuthResponse(user));
+});
+
+app.MapPost("/api/auth/resend-verification", async (
+    ResendVerificationCodeRequest request,
+    UserManager<ApplicationUser> userManager,
+    EmailVerificationService verification,
+    CancellationToken ct) =>
+{
+    var user = await userManager.FindByEmailAsync(request.Email.Trim());
+    if (user is null || user.EmailConfirmed)
+        return Results.Accepted();
+    if (!verification.IsConfigured)
+        return Results.Problem(
+            "Email verification is not configured.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    var sent = await verification.SendAsync(user, ct);
+    if (!sent.Sent)
+    {
+        return Results.Json(
+            new { error = "Please wait before requesting another code.", retryAfterSeconds = sent.RetryAfterSeconds },
+            statusCode: StatusCodes.Status429TooManyRequests);
+    }
+    return Results.Accepted(value: new { retryAfterSeconds = sent.RetryAfterSeconds });
 });
 
 app.MapPost("/api/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
@@ -198,7 +337,8 @@ app.MapGet("/api/auth/google/callback", async (
     if (string.IsNullOrWhiteSpace(email) || !emailVerified)
         return Results.LocalRedirect(errorRedirect);
 
-    var user = await userManager.FindByEmailAsync(email);
+    var linkedUser = await userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+    var user = linkedUser ?? await userManager.FindByEmailAsync(email);
     if (user is null)
     {
         user = new ApplicationUser
@@ -213,10 +353,20 @@ app.MapGet("/api/auth/google/callback", async (
         if (!createResult.Succeeded)
             return Results.LocalRedirect(errorRedirect);
     }
+    else if (!user.EmailConfirmed)
+    {
+        user.EmailConfirmed = true;
+        var confirmResult = await userManager.UpdateAsync(user);
+        if (!confirmResult.Succeeded)
+            return Results.LocalRedirect(errorRedirect);
+    }
 
-    var addLoginResult = await userManager.AddLoginAsync(user, info);
-    if (!addLoginResult.Succeeded)
-        return Results.LocalRedirect(errorRedirect);
+    if (linkedUser is null)
+    {
+        var addLoginResult = await userManager.AddLoginAsync(user, info);
+        if (!addLoginResult.Succeeded)
+            return Results.LocalRedirect(errorRedirect);
+    }
 
     await signInManager.SignInAsync(user, isPersistent: true);
     return Results.LocalRedirect("/");

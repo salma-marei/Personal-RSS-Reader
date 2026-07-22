@@ -11,6 +11,7 @@ public sealed class ReaderDbContext(DbContextOptions<ReaderDbContext> options)
     public DbSet<RssFeed> Feeds => Set<RssFeed>();
     public DbSet<UserSubscription> UserSubscriptions => Set<UserSubscription>();
     public DbSet<UserArticleState> UserArticleStates => Set<UserArticleState>();
+    public DbSet<EmailVerificationCode> EmailVerificationCodes => Set<EmailVerificationCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,5 +60,14 @@ public sealed class ReaderDbContext(DbContextOptions<ReaderDbContext> options)
             .HasForeignKey(item => item.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         articleState.HasIndex(item => new { item.UserId, item.ReadLaterAt });
+
+        var verificationCode = modelBuilder.Entity<EmailVerificationCode>();
+        verificationCode.ToTable("EmailVerificationCodes");
+        verificationCode.HasKey(item => item.UserId);
+        verificationCode.Property(item => item.CodeHash).IsRequired().HasMaxLength(500);
+        verificationCode.HasOne(item => item.User)
+            .WithOne(user => user.EmailVerificationCode)
+            .HasForeignKey<EmailVerificationCode>(item => item.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

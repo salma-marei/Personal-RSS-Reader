@@ -2,17 +2,20 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PersonalRssReader.Data;
 
 #nullable disable
 
-namespace PersonalRssReader.Data.Migrations
+namespace PersonalRssReader.Persistence.Migrations
 {
     [DbContext(typeof(ReaderDbContext))]
-    partial class ReaderDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260721125802_AddEmailVerificationCodes")]
+    partial class AddEmailVerificationCodes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");

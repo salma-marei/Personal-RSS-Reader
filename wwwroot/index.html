@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Feed Reader</title>
-  <link rel="stylesheet" href="styles.css?v=20260721-84">
+  <link rel="stylesheet" href="styles.css?v=20260722-87">
 </head>
 <body>
   <div class="app">
@@ -250,7 +250,25 @@
         <p class="auth-error" id="auth-error" hidden></p>
         <button class="auth-submit" id="auth-submit" type="submit">Sign in</button>
       </form>
-      <div class="auth-divider"><span id="auth-divider-label">or continue with Google</span></div>
+      <form id="auth-verify-form" hidden>
+        <p class="auth-verify-copy" id="auth-verify-copy"></p>
+        <p class="auth-verify-spam-hint" id="auth-verify-spam-hint"></p>
+        <label>
+          <span id="auth-code-label">Verification code</span>
+          <span class="auth-code-inputs" dir="ltr">
+            <input class="auth-code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" pattern="[0-9]" aria-label="Digit 1" required>
+            <input class="auth-code-input" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 2" required>
+            <input class="auth-code-input" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 3" required>
+            <input class="auth-code-input" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 4" required>
+            <input class="auth-code-input" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 5" required>
+            <input class="auth-code-input" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 6" required>
+          </span>
+        </label>
+        <p class="auth-error" id="auth-verify-error" hidden></p>
+        <button class="auth-submit" id="auth-verify-submit" type="submit">Verify email</button>
+        <button class="auth-resend" id="auth-resend" type="button">Resend code</button>
+      </form>
+      <div class="auth-divider" id="auth-divider"><span id="auth-divider-label">or continue with Google</span></div>
       <button class="auth-google" id="auth-google" type="button">
         <svg aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.8 5.8 0 0 1-5.5-4H3.2v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.5 14a6 6 0 0 1 0-3.9V7.5H3.2a10 10 0 0 0 0 9.1L6.5 14Z"/><path fill="#EA4335" d="M12 6a5.4 5.4 0 0 1 3.8 1.5l2.9-2.8A9.6 9.6 0 0 0 3.2 7.5l3.3 2.6A5.8 5.8 0 0 1 12 6Z"/></svg>
         <span id="auth-google-label">Continue with Google</span>
@@ -276,6 +294,6 @@
 
   <div class="subscription-toast" id="subscription-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="app.js?v=20260721-86"></script>
+  <script src="app.js?v=20260722-91"></script>
 </body>
 </html>

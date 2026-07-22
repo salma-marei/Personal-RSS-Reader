@@ -29,6 +29,12 @@ const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, rememberMe })
   }),
+  verifyEmail: (email, code) => fetch('/api/auth/verify-email', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code })
+  }),
+  resendVerification: (email) => fetch('/api/auth/resend-verification', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
+  }),
   logout: () => fetch('/api/auth/logout', { method: 'POST' }),
   subscriptions: () => fetch('/api/subscriptions').then(r => r.json()),
   subscribe: (feedId) => fetch('/api/subscriptions/' + feedId, { method: 'POST' }),
@@ -103,6 +109,14 @@ const i18n = {
     continueWithGoogle: 'Continue with Google',
     orContinueWithGoogle: 'or continue with Google',
     googleAuthFailed: 'Google sign-in could not be completed. Please try again.',
+    verifyEmail: 'Verify your email',
+    verificationSubtitle: 'Enter the code we sent to your email.',
+    verificationCopy: 'We sent a six-digit code to {email}. It expires in 10 minutes.',
+    verificationSpamHint: 'Can\'t find it? Check your spam or junk folder.',
+    verificationCode: 'Verification code',
+    resendCode: 'Resend code',
+    resendCodeIn: 'Resend code in {seconds}s',
+    codeResent: 'A new verification code was sent.',
     signOut: 'Sign out',
     email: 'Email',
     password: 'Password',
@@ -120,7 +134,7 @@ const i18n = {
     subscribe: 'Subscribe',
     subscribed: 'Subscribed',
     unsubscribe: 'Unsubscribe',
-    addedToMyFeeds: '{name} added to My Feeds',
+    addedToMyFeeds: 'Subscribed to {name}',
     myFeedsEmpty: 'You have not subscribed to any feeds yet.',
     noSuggestedFeeds: 'No suggested feeds match your search.',
     discoverFeeds: 'Explore Feeds',
@@ -160,6 +174,14 @@ const i18n = {
     continueWithGoogle: '\u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google',
     orContinueWithGoogle: '\u0623\u0648 \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google',
     googleAuthFailed: '\u062a\u0639\u0630\u0631 \u0625\u0643\u0645\u0627\u0644 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 Google. \u064a\u0631\u062c\u0649 \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
+    verifyEmail: '\u062a\u0623\u0643\u064a\u062f \u0628\u0631\u064a\u062f\u0643 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
+    verificationSubtitle: '\u0623\u062f\u062e\u0644 \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0630\u064a \u0623\u0631\u0633\u0644\u0646\u0627\u0647 \u0625\u0644\u0649 \u0628\u0631\u064a\u062f\u0643.',
+    verificationCopy: '\u0623\u0631\u0633\u0644\u0646\u0627 \u0631\u0645\u0632\u064b\u0627 \u0645\u0643\u0648\u0646\u064b\u0627 \u0645\u0646 6 \u0623\u0631\u0642\u0627\u0645 \u0625\u0644\u0649 {email}. \u062a\u0646\u062a\u0647\u064a \u0635\u0644\u0627\u062d\u064a\u062a\u0647 \u0628\u0639\u062f 10 \u062f\u0642\u0627\u0626\u0642.',
+    verificationSpamHint: '\u0644\u0645 \u062a\u062c\u062f\u0647\u061f \u062a\u062d\u0642\u0642 \u0645\u0646 \u0645\u062c\u0644\u062f \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u063a\u064a\u0631 \u0627\u0644\u0645\u0631\u063a\u0648\u0628 \u0641\u064a\u0647\u0627.',
+    verificationCode: '\u0631\u0645\u0632 \u0627\u0644\u062a\u0623\u0643\u064a\u062f',
+    resendCode: '\u0625\u0639\u0627\u062f\u0629 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0631\u0645\u0632',
+    resendCodeIn: '\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0625\u0631\u0633\u0627\u0644 \u0628\u0639\u062f {seconds} \u062b',
+    codeResent: '\u062a\u0645 \u0625\u0631\u0633\u0627\u0644 \u0631\u0645\u0632 \u062a\u0623\u0643\u064a\u062f \u062c\u062f\u064a\u062f.',
     signOut: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c',
     email: '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
     password: '\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631',
@@ -177,7 +199,7 @@ const i18n = {
     subscribe: '\u0627\u0634\u062a\u0631\u0627\u0643',
     subscribed: '\u0645\u0634\u062a\u0631\u0643',
     unsubscribe: '\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
-    addedToMyFeeds: '\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 {name} \u0625\u0644\u0649 \u062e\u0644\u0627\u0635\u0627\u062a\u064a',
+    addedToMyFeeds: '\u062a\u0645 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0641\u064a {name}',
     myFeedsEmpty: '\u0644\u0645 \u062a\u0634\u062a\u0631\u0643 \u0641\u064a \u0623\u064a \u062e\u0644\u0627\u0635\u0627\u062a \u0628\u0639\u062f.',
     noSuggestedFeeds: '\u0644\u0627 \u062a\u0648\u062c\u062f \u062e\u0644\u0627\u0635\u0627\u062a \u0645\u0642\u062a\u0631\u062d\u0629 \u062a\u0637\u0627\u0628\u0642 \u0628\u062d\u062b\u0643.',
     discoverFeeds: '\u0627\u0643\u062a\u0634\u0641 \u0627\u0644\u062e\u0644\u0627\u0635\u0627\u062a',
@@ -291,6 +313,8 @@ const state = {
     loading: true,
     user: null,
     mode: 'login',
+    verificationEmail: '',
+    resendAvailableAt: 0,
     pendingSubscriptionId: null,
     pendingFeedUrl: null,
     pendingReadLaterArticle: null,
@@ -375,10 +399,16 @@ function updateAuthUi() {
 
 function updateAuthModalText() {
   const registering = state.auth.mode === 'register';
+  const verifying = state.auth.mode === 'verify';
   document.getElementById('auth-modal-title').textContent =
-    t(registering ? 'createAccount' : 'signIn');
+    t(verifying ? 'verifyEmail' : registering ? 'createAccount' : 'signIn');
   document.getElementById('auth-modal-subtitle').textContent =
-    t(registering ? 'registerSubtitle' : 'loginSubtitle');
+    t(verifying ? 'verificationSubtitle' : registering ? 'registerSubtitle' : 'loginSubtitle');
+  document.getElementById('auth-form').hidden = verifying;
+  document.getElementById('auth-verify-form').hidden = !verifying;
+  document.getElementById('auth-google').hidden = verifying;
+  document.getElementById('auth-divider').hidden = verifying;
+  document.getElementById('auth-switch').hidden = verifying;
   document.getElementById('auth-email-label').textContent = t('email');
   document.getElementById('auth-password-label').textContent = t('password');
   document.getElementById('auth-password-help').textContent = t('passwordHelp');
@@ -393,6 +423,44 @@ function updateAuthModalText() {
     registering ? 'new-password' : 'current-password';
   document.getElementById('auth-google-label').textContent = t('continueWithGoogle');
   document.getElementById('auth-divider-label').textContent = t('orContinueWithGoogle');
+  if (verifying) {
+    document.getElementById('auth-verify-copy').textContent =
+      tf('verificationCopy', { email: state.auth.verificationEmail });
+    document.getElementById('auth-verify-spam-hint').textContent = t('verificationSpamHint');
+    document.getElementById('auth-code-label').textContent = t('verificationCode');
+    document.getElementById('auth-verify-submit').textContent = t('verifyEmail');
+    updateResendButton();
+  }
+}
+
+let resendCountdownTimer = null;
+
+function updateResendButton() {
+  const button = document.getElementById('auth-resend');
+  const seconds = Math.max(0, Math.ceil((state.auth.resendAvailableAt - Date.now()) / 1000));
+  button.disabled = seconds > 0;
+  button.textContent = seconds > 0 ? tf('resendCodeIn', { seconds }) : t('resendCode');
+  if (seconds === 0 && resendCountdownTimer) {
+    clearInterval(resendCountdownTimer);
+    resendCountdownTimer = null;
+  }
+}
+
+function enterVerificationMode(email, retryAfterSeconds = 60) {
+  state.auth.mode = 'verify';
+  state.auth.verificationEmail = email;
+  state.auth.resendAvailableAt = Date.now() + retryAfterSeconds * 1000;
+  document.getElementById('auth-verify-form').reset();
+  document.getElementById('auth-verify-error').hidden = true;
+  document.getElementById('auth-verify-copy').textContent = tf('verificationCopy', { email });
+  document.getElementById('auth-verify-spam-hint').textContent = t('verificationSpamHint');
+  document.getElementById('auth-code-label').textContent = t('verificationCode');
+  document.getElementById('auth-verify-submit').textContent = t('verifyEmail');
+  updateAuthModalText();
+  updateResendButton();
+  if (resendCountdownTimer) clearInterval(resendCountdownTimer);
+  resendCountdownTimer = setInterval(updateResendButton, 1000);
+  requestAnimationFrame(() => document.querySelector('.auth-code-input').focus());
 }
 
 const pendingAuthStorageKey = 'rss-pending-auth-action';
@@ -423,7 +491,14 @@ async function restorePendingAuthAction() {
     sessionStorage.removeItem(pendingAuthStorageKey);
   } catch { /* ignore invalid or unavailable session storage */ }
   if (!pending) return;
-  if (pending.subscriptionId) await subscribeToFeed(pending.subscriptionId);
+  if (pending.subscriptionId && await subscribeToFeed(pending.subscriptionId)) {
+    state.selected = pending.subscriptionId;
+    if (window.location.pathname === '/manage-feeds') navigateToReader();
+    else {
+      renderSidebar();
+      renderCards();
+    }
+  }
   if (pending.feedUrl) await addCustomFeed(pending.feedUrl);
   if (pending.readLaterArticle) await setReadLater(pending.readLaterArticle, true);
 }
@@ -451,11 +526,42 @@ function openAuthModal(mode) {
 
 function closeAuthModal(clearPending = true) {
   document.getElementById('auth-modal').hidden = true;
+  if (resendCountdownTimer) {
+    clearInterval(resendCountdownTimer);
+    resendCountdownTimer = null;
+  }
   if (clearPending) {
     state.auth.pendingSubscriptionId = null;
     state.auth.pendingFeedUrl = null;
     state.auth.pendingReadLaterArticle = null;
   }
+}
+
+async function finishAuthentication(payload) {
+  state.auth.user = payload;
+  resetDailyBrief();
+  closeAuthModal(false);
+  await loadSubscriptions();
+  await loadArticleStates();
+  // A feed selected while browsing as a guest is not part of the signed-in
+  // reader unless the user subscribed to it. Start authentication on My Feeds
+  // instead of leaving the user on a now-stale preview selection.
+  if (!['all', 'read-later'].includes(state.selected) && !isSubscribed(state.selected)) {
+    state.selected = 'all';
+  }
+  const pendingFeedId = state.auth.pendingSubscriptionId;
+  const pendingFeedUrl = state.auth.pendingFeedUrl;
+  const pendingArticle = state.auth.pendingReadLaterArticle;
+  state.auth.pendingSubscriptionId = null;
+  state.auth.pendingFeedUrl = null;
+  state.auth.pendingReadLaterArticle = null;
+  if (pendingFeedId && await subscribeToFeed(pendingFeedId)) {
+    state.selected = pendingFeedId;
+    if (window.location.pathname === '/manage-feeds') navigateToReader();
+  }
+  if (pendingFeedUrl) await addCustomFeed(pendingFeedUrl);
+  if (pendingArticle) await setReadLater(pendingArticle, true);
+  updateAuthUi();
 }
 
 function authErrorMessage(payload) {
@@ -480,29 +586,73 @@ async function submitAuthForm(event) {
       ? await api.register(email, password)
       : await api.login(email, password, rememberMe);
     const payload = await response.json().catch(() => ({}));
+    if (payload.requiresVerification) {
+      enterVerificationMode(payload.email || email, payload.retryAfterSeconds || 60);
+      return;
+    }
     if (!response.ok) throw new Error(authErrorMessage(payload));
-
-    state.auth.user = payload;
-    resetDailyBrief();
-    closeAuthModal(false);
-    await loadSubscriptions();
-    await loadArticleStates();
-    const pendingFeedId = state.auth.pendingSubscriptionId;
-    const pendingFeedUrl = state.auth.pendingFeedUrl;
-    const pendingArticle = state.auth.pendingReadLaterArticle;
-    state.auth.pendingSubscriptionId = null;
-    state.auth.pendingFeedUrl = null;
-    state.auth.pendingReadLaterArticle = null;
-    if (pendingFeedId) await subscribeToFeed(pendingFeedId);
-    if (pendingFeedUrl) await addCustomFeed(pendingFeedUrl);
-    if (pendingArticle) await setReadLater(pendingArticle, true);
-    updateAuthUi();
+    await finishAuthentication(payload);
   } catch (authError) {
     error.textContent = authError instanceof Error ? authError.message : t('authFailed');
     error.hidden = false;
   } finally {
     submit.disabled = false;
     updateAuthModalText();
+  }
+}
+
+async function submitVerificationForm(event) {
+  event.preventDefault();
+  const code = [...document.querySelectorAll('.auth-code-input')]
+    .map(input => input.value)
+    .join('');
+  const submit = document.getElementById('auth-verify-submit');
+  const error = document.getElementById('auth-verify-error');
+  submit.disabled = true;
+  submit.textContent = t('authenticating');
+  error.hidden = true;
+  error.style.color = '';
+  try {
+    const response = await api.verifyEmail(state.auth.verificationEmail, code);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(authErrorMessage(payload));
+    await finishAuthentication(payload);
+  } catch (verificationError) {
+    error.textContent = verificationError instanceof Error ? verificationError.message : t('authFailed');
+    error.hidden = false;
+  } finally {
+    submit.disabled = false;
+    submit.textContent = t('verifyEmail');
+  }
+}
+
+async function resendVerificationCode() {
+  const button = document.getElementById('auth-resend');
+  const error = document.getElementById('auth-verify-error');
+  button.disabled = true;
+  error.hidden = true;
+  try {
+    const response = await api.resendVerification(state.auth.verificationEmail);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (payload.retryAfterSeconds) {
+        state.auth.resendAvailableAt = Date.now() + payload.retryAfterSeconds * 1000;
+        updateResendButton();
+      }
+      throw new Error(authErrorMessage(payload));
+    }
+    state.auth.resendAvailableAt = Date.now() + (payload.retryAfterSeconds || 60) * 1000;
+    error.textContent = t('codeResent');
+    error.style.color = 'var(--accent)';
+    error.hidden = false;
+    if (resendCountdownTimer) clearInterval(resendCountdownTimer);
+    resendCountdownTimer = setInterval(updateResendButton, 1000);
+    updateResendButton();
+  } catch (resendError) {
+    error.style.color = '';
+    error.textContent = resendError instanceof Error ? resendError.message : t('authFailed');
+    error.hidden = false;
+    updateResendButton();
   }
 }
 
@@ -574,30 +724,54 @@ let latestSubscriptionId = null;
 
 async function subscribeToFeed(feedId) {
   const response = await api.subscribe(feedId);
-  if (!response.ok) return;
+  if (!response.ok) return false;
   state.subscriptions.add(feedId);
   latestSubscriptionId = feedId;
   resetDailyBrief();
   updateDailyBriefButton();
   const feed = feedById(feedId);
-  showSubscriptionToast(tf('addedToMyFeeds', { name: feed?.name || '' }));
+  showSubscriptionToast(tf('addedToMyFeeds', { name: feed?.name || '' }), () => {
+    clearArticleSearch();
+    if (window.location.pathname === '/manage-feeds') navigateToReader();
+    selectFeedAndScroll(feedId);
+  });
   renderSidebar();
   renderCards();
   renderSubscriptionControls();
   if (window.location.pathname === '/manage-feeds') renderFeedManager();
+  return true;
 }
 
 let subscriptionToastTimer = null;
-function showSubscriptionToast(message) {
+let subscriptionToastHideTimer = null;
+function showSubscriptionToast(message, onActivate = null) {
   const toast = document.getElementById('subscription-toast');
   if (!toast) return;
+  clearTimeout(subscriptionToastTimer);
+  clearTimeout(subscriptionToastHideTimer);
   toast.textContent = message;
+  toast.classList.toggle('actionable', Boolean(onActivate));
+  toast.onclick = onActivate ? () => {
+    toast.classList.remove('visible');
+    onActivate();
+  } : null;
+  toast.onkeydown = onActivate ? event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toast.click();
+  } : null;
+  if (onActivate) {
+    toast.tabIndex = 0;
+    toast.setAttribute('role', 'button');
+  } else {
+    toast.removeAttribute('tabindex');
+    toast.setAttribute('role', 'status');
+  }
   toast.hidden = false;
   requestAnimationFrame(() => toast.classList.add('visible'));
-  clearTimeout(subscriptionToastTimer);
   subscriptionToastTimer = setTimeout(() => {
     toast.classList.remove('visible');
-    setTimeout(() => { toast.hidden = true; }, 180);
+    subscriptionToastHideTimer = setTimeout(() => { toast.hidden = true; }, 180);
   }, 2800);
 }
 
@@ -627,7 +801,6 @@ async function unsubscribeFromFeed(feedId) {
   if (latestSubscriptionId === feedId) latestSubscriptionId = null;
   resetDailyBrief();
   updateDailyBriefButton();
-  if (state.selected === feedId) state.selected = 'all';
   renderSidebar();
   renderCards();
   renderSubscriptionControls();
@@ -1758,7 +1931,7 @@ function renderSubscriptionControls() {
   const button = document.getElementById('feed-subscription-button');
   if (!button) return;
   const feed = state.selected === 'all' ? null : feedById(state.selected);
-  button.hidden = !feed || (!feed.isSuggested && !isSubscribed(feed.id));
+  button.hidden = !feed;
   if (button.hidden) return;
   const subscribed = isSubscribed(feed.id);
   updateSubscriptionButton(button, subscribed);
@@ -1920,7 +2093,10 @@ function filteredArticles() {
   } else {
     list = state.selected === 'all'
       ? readerArticles()
-      : readerArticles().filter(a => a.sourceFeedId === state.selected);
+      // Selecting a suggested feed is an explicit preview. Keep My Feeds
+      // subscription-only, but allow this feed's articles to be explored
+      // before the signed-in user decides to subscribe.
+      : state.articles.filter(a => a.sourceFeedId === state.selected);
   }
 
   const q = state.search.trim().toLowerCase();
@@ -1965,7 +2141,7 @@ function renderCards() {
     cards.appendChild(renderDailyBriefCard());
   }
 
-  if (readerFeeds().length === 0 && state.selected !== 'read-later') {
+  if (readerFeeds().length === 0 && state.selected === 'all') {
     if (state.auth.user && state.selected === 'all') {
       viewName.textContent = t('buildMyFeeds');
       document.getElementById('view-count').textContent = '';
@@ -2395,7 +2571,15 @@ function refreshSelection(key) {
   return promise;
 }
 
+function clearArticleSearch() {
+  state.search = '';
+  document.getElementById('search').value = '';
+  document.getElementById('mobile-search').value = '';
+  setMobileSearchOpen(false);
+}
+
 function selectFeedAndScroll(key) {
+  if (state.selected !== key) clearArticleSearch();
   state.selected = key;
   rememberFeed(key);
   renderSidebar();
@@ -2655,6 +2839,39 @@ document.getElementById('auth-switch').addEventListener('click', () => {
   updateAuthModalText();
 });
 document.getElementById('auth-form').addEventListener('submit', submitAuthForm);
+document.getElementById('auth-verify-form').addEventListener('submit', submitVerificationForm);
+document.getElementById('auth-resend').addEventListener('click', resendVerificationCode);
+const authCodeInputs = [...document.querySelectorAll('.auth-code-input')];
+for (const [index, input] of authCodeInputs.entries()) {
+  input.addEventListener('input', event => {
+    const digits = event.target.value.replace(/\D/g, '');
+    if (digits.length > 1) {
+      digits.slice(0, 6).split('').forEach((digit, offset) => {
+        if (authCodeInputs[index + offset]) authCodeInputs[index + offset].value = digit;
+      });
+      authCodeInputs[Math.min(index + digits.length, 5)].focus();
+      return;
+    }
+    event.target.value = digits;
+    if (digits && authCodeInputs[index + 1]) authCodeInputs[index + 1].focus();
+  });
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Backspace' && !input.value && authCodeInputs[index - 1]) {
+      authCodeInputs[index - 1].focus();
+    }
+    if (event.key === 'ArrowLeft' && authCodeInputs[index - 1]) authCodeInputs[index - 1].focus();
+    if (event.key === 'ArrowRight' && authCodeInputs[index + 1]) authCodeInputs[index + 1].focus();
+  });
+  input.addEventListener('paste', event => {
+    const digits = event.clipboardData?.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+    event.preventDefault();
+    digits.split('').forEach((digit, offset) => {
+      if (authCodeInputs[index + offset]) authCodeInputs[index + offset].value = digit;
+    });
+    authCodeInputs[Math.min(index + digits.length - 1, 5)].focus();
+  });
+}
 document.getElementById('auth-google').addEventListener('click', beginGoogleSignIn);
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
