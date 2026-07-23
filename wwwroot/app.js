@@ -53,8 +53,8 @@ const i18n = {
     readTime: '{minutes} min read',
     categorySpotlight: 'Category spotlight',
     closeCategory: 'Close category spotlight',
-    collapseBrief: 'Collapse daily brief',
-    expandBrief: 'Expand daily brief',
+    collapseBrief: 'Collapse news brief',
+    expandBrief: 'Expand news brief',
     openFullBrief: 'Open full brief',
     add: 'Add',
     addFeedUrl: 'Add feed URL...',
@@ -62,6 +62,11 @@ const i18n = {
     backToTop: 'Head to the top!',
     by: 'by',
     catchMeUp: 'Catch Me Up',
+    briefCoverage: 'Brief coverage',
+    briefRangeHours: '{hours} hours',
+    briefRangeArticleCount: '{count} articles',
+    briefRangeArticleCountOne: '1 article',
+    briefRangeLocked: 'Sign in to change the coverage and generate another brief.',
     close: 'Close',
     copied: 'Copied!',
     copySummary: 'Copy Summary',
@@ -69,7 +74,8 @@ const i18n = {
     feeds: 'Feeds',
     generatedAt: 'Generated at {time}',
     generatedFrom: 'Generated from {articles} articles across {feeds} feeds',
-    generatingBrief: 'Generating your AI Daily Brief...',
+    coveringHours: 'Covering the last {hours} hours',
+    generatingBrief: 'Generating your AI News Brief...',
     justNow: 'just now',
     langToggle: 'ع',
     loading: 'Loading...',
@@ -77,7 +83,7 @@ const i18n = {
     noArticlesMatch: 'No articles match your search.',
     noArticlesYet: 'No articles yet. Try "Refresh all".',
     noArticlesInFeed: 'No articles yet. Try refreshing this feed.',
-    noArticlesToday: 'No articles were published today.',
+    noArticlesToday: 'No articles were published in the last 24 hours.',
     noFeeds: 'No feeds yet. Open Discover Feeds to add your first subscription.',
     myFeeds: 'My Feeds',
     chooseFeeds: 'Choose feeds',
@@ -93,13 +99,13 @@ const i18n = {
     refreshing: 'Refreshing...',
     search: 'Search',
     suggestedFeeds: 'Suggested Feeds',
-    briefFailed: 'The AI Daily Brief could not be generated. Please try again.',
-    briefNotConfigured: 'The AI Daily Brief is not configured yet.',
-    briefTitle: 'AI Daily Brief',
-    briefDisplayTitle: 'Daily Brief',
+    briefFailed: 'The AI News Brief could not be generated. Please try again.',
+    briefNotConfigured: 'The AI News Brief is not configured yet.',
+    briefTitle: 'AI News Brief',
+    briefDisplayTitle: 'News Brief',
     briefCooldown: 'Please wait at least one minute between regenerations.',
     briefDailyLimit: 'You have used all 5 brief regenerations for today.',
-    briefGlobalLimit: 'The AI Daily Brief has reached its generation limit for today.',
+    briefGlobalLimit: 'The AI News Brief has reached its generation limit for today.',
     briefNeedsFeeds: 'Subscribe to at least one feed to create your personal brief.',
     briefQuota: 'You have {remaining} regenerations today.',
     briefQuotaOne: 'You have 1 regeneration today.',
@@ -168,6 +174,12 @@ const i18n = {
   },
   ar: {
     readTime: '\u0642\u0631\u0627\u0621\u0629 {minutes} \u062f',
+    briefCoverage: '\u0646\u0637\u0627\u0642 \u0627\u0644\u0645\u0648\u062c\u0632',
+    briefRangeHours: '{hours} \u0633\u0627\u0639\u0629',
+    briefRangeArticleCount: '{count} \u0645\u0642\u0627\u0644\u0627\u062a',
+    briefRangeArticleCountOne: '\u0645\u0642\u0627\u0644 \u0648\u0627\u062d\u062f',
+    briefRangeLocked: '\u0633\u062c\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0646\u0637\u0627\u0642 \u0648\u0625\u0646\u0634\u0627\u0621 \u0645\u0648\u062c\u0632 \u0622\u062e\u0631.',
+    coveringHours: '\u064a\u063a\u0637\u064a \u0622\u062e\u0631 {hours} \u0633\u0627\u0639\u0629',
     suggestedFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a \u0645\u0642\u062a\u0631\u062d\u0629',
     createAccount: '\u0625\u0646\u0634\u0627\u0621 \u062d\u0633\u0627\u0628',
     signIn: '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644',
@@ -222,8 +234,8 @@ const i18n = {
     articlesAvailable: '{count} \u0645\u0642\u0627\u0644\u0629 \u062d\u062f\u064a\u062b\u0629',
     categorySpotlight: '\u0646\u0638\u0631\u0629 \u0645\u0631\u0643\u0632\u0629',
     closeCategory: '\u0625\u063a\u0644\u0627\u0642 \u0646\u0638\u0631\u0629 \u0627\u0644\u0641\u0626\u0629',
-    collapseBrief: '\u0637\u064a \u0627\u0644\u0645\u0648\u062c\u0632 \u0627\u0644\u064a\u0648\u0645\u064a',
-    expandBrief: '\u062a\u0648\u0633\u064a\u0639 \u0627\u0644\u0645\u0648\u062c\u0632 \u0627\u0644\u064a\u0648\u0645\u064a',
+    collapseBrief: '\u0637\u064a \u0645\u0648\u062c\u0632 \u0627\u0644\u0623\u062e\u0628\u0627\u0631',
+    expandBrief: '\u062a\u0648\u0633\u064a\u0639 \u0645\u0648\u062c\u0632 \u0627\u0644\u0623\u062e\u0628\u0627\u0631',
     openFullBrief: '\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u062c\u0632 \u0643\u0627\u0645\u0644\u064b\u0627',
     add: 'إضافة',
     addFeedUrl: 'أضف رابط الخلاصة...',
@@ -238,7 +250,7 @@ const i18n = {
     feeds: 'الخلاصات',
     generatedAt: 'تم الإنشاء في {time}',
     generatedFrom: 'تم إنشاؤه من {articles} مقالًا عبر {feeds} خلاصات',
-    generatingBrief: 'جارٍ إنشاء موجزك اليومي بالذكاء الاصطناعي...',
+    generatingBrief: 'جارٍ إنشاء موجز الأخبار بالذكاء الاصطناعي...',
     justNow: 'الآن',
     langToggle: 'EN',
     loading: 'جار التحميل...',
@@ -246,7 +258,7 @@ const i18n = {
     noArticlesMatch: 'لا توجد مقالات تطابق البحث.',
     noArticlesYet: 'لا توجد مقالات بعد. جرّب "تحديث الكل".',
     noArticlesInFeed: 'لا توجد مقالات بعد. جرّب تحديث هذه الخلاصة.',
-    noArticlesToday: 'لم تُنشر أي مقالات اليوم.',
+    noArticlesToday: 'لم تُنشر أي مقالات خلال آخر 24 ساعة.',
     noFeeds: 'لا توجد خلاصات بعد. افتح إدارة الخلاصات لإضافة اشتراكك الأول.',
     myFeeds: '\u062e\u0644\u0627\u0635\u0627\u062a\u064a',
     chooseFeeds: '\u0627\u062e\u062a\u0631 \u062e\u0644\u0627\u0635\u0627\u062a',
@@ -261,13 +273,13 @@ const i18n = {
     refreshingFeed: 'جارٍ تحديث الخلاصة...',
     refreshing: 'جار التحديث...',
     search: 'بحث',
-    briefFailed: 'تعذر إنشاء الموجز اليومي. يُرجى المحاولة مرة أخرى.',
-    briefNotConfigured: 'لم يتم إعداد الموجز اليومي بعد.',
-    briefTitle: 'الموجز اليومي بالذكاء الاصطناعي',
-    briefDisplayTitle: 'الموجز اليومي',
+    briefFailed: 'تعذر إنشاء موجز الأخبار. يُرجى المحاولة مرة أخرى.',
+    briefNotConfigured: 'لم يتم إعداد موجز الأخبار بعد.',
+    briefTitle: 'موجز الأخبار بالذكاء الاصطناعي',
+    briefDisplayTitle: 'موجز الأخبار',
     briefCooldown: 'يُرجى الانتظار دقيقة واحدة على الأقل بين مرات إعادة الإنشاء.',
     briefDailyLimit: 'لقد استخدمت محاولات إعادة الإنشاء الخمس المتاحة اليوم.',
-    briefGlobalLimit: 'وصل الموجز اليومي إلى الحد الإجمالي للإنشاء اليوم.',
+    briefGlobalLimit: 'وصل موجز الأخبار إلى الحد الإجمالي للإنشاء اليوم.',
     briefQuota: 'لديك {remaining} مرات إعادة إنشاء اليوم.',
     briefQuotaOne: 'لديك إعادة إنشاء واحدة اليوم.',
     retry: 'إعادة المحاولة',
@@ -308,6 +320,7 @@ const state = {
     regenerateAvailableAt: 0,
     limitReason: null,
     notice: '',
+    coverageMode: 0,
   },
   auth: {
     loading: true,
@@ -1276,7 +1289,7 @@ function applyLanguage(lang, rerender) {
   }
 }
 
-// ---------- AI daily brief ----------
+// ---------- AI news brief ----------
 function resetDailyBrief() {
   state.dailyBrief.status = 'idle';
   state.dailyBrief.data = null;
@@ -1325,11 +1338,9 @@ function updateDailyBriefQuota(response, payload) {
     : (Number(retryAfter) > 0 ? 'Cooldown' : null);
 }
 
-function todayUtcRange() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+function recentBriefUtcRange() {
+  const end = new Date();
+  const start = new Date(end.getTime() - (24 * 60 * 60 * 1000));
   return { dayStartUtc: start.toISOString(), dayEndUtc: end.toISOString() };
 }
 
@@ -1398,9 +1409,10 @@ async function generateDailyBrief(regenerate) {
 
   try {
     const response = await api.dailyBrief({
-      ...todayUtcRange(),
+      ...recentBriefUtcRange(),
       language: requestLanguage,
-      regenerate: Boolean(regenerate)
+      regenerate: Boolean(regenerate),
+      coverageHours: brief.coverageMode
     });
 
     let payload = null;
@@ -1664,10 +1676,94 @@ function renderDailyBriefCard() {
   const title = document.createElement('h2');
   setAiLabel(title, t('briefDisplayTitle'));
   const subtitle = document.createElement('p');
-  subtitle.textContent = tf('generatedFrom', {
+  const generatedFrom = tf('generatedFrom', {
     articles: brief.articleCount,
     feeds: brief.feedCount
   });
+  const generatedFromText = document.createElement('span');
+  generatedFromText.textContent = `${generatedFrom} · `;
+  subtitle.appendChild(generatedFromText);
+  if (state.auth.user) {
+    const coverageControl = document.createElement('details');
+    coverageControl.className = 'daily-brief-coverage-control';
+    const coverage = document.createElement('summary');
+    coverage.className = 'daily-brief-coverage';
+    coverage.setAttribute('aria-label', t('briefCoverage'));
+    coverage.textContent = tf('coveringHours', { hours: brief.coverageHours });
+    const chevron = document.createElement('span');
+    chevron.className = 'daily-brief-coverage-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '\u25be';
+    coverage.appendChild(chevron);
+    coverageControl.appendChild(coverage);
+    const menu = document.createElement('div');
+    menu.className = 'daily-brief-coverage-menu';
+    const coverageOptions = new Map(
+      (brief.coverageOptions || []).map(option => [option.hours, option.articleCount])
+    );
+    let pendingCoverageHours = brief.coverageHours;
+    for (const hours of [6, 12, 24]) {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'daily-brief-coverage-option';
+      option.dataset.hours = String(hours);
+      option.classList.toggle('active', hours === brief.coverageHours);
+      const label = document.createElement('span');
+      label.textContent = tf('briefRangeHours', { hours });
+      const count = coverageOptions.get(hours) ?? 0;
+      const countLabel = document.createElement('span');
+      countLabel.className = 'daily-brief-coverage-count';
+      countLabel.textContent = count === 1
+        ? t('briefRangeArticleCountOne')
+        : tf('briefRangeArticleCount', { count });
+      option.append(label, countLabel);
+      option.addEventListener('click', () => {
+        pendingCoverageHours = hours;
+        for (const item of menu.querySelectorAll('.daily-brief-coverage-option')) {
+          item.classList.toggle('active', Number(item.dataset.hours) === hours);
+        }
+        regenerateCoverage.disabled = hours === brief.coverageHours || briefState.remainingRegenerations === 0;
+      });
+      menu.appendChild(option);
+    }
+    const regenerateCoverage = document.createElement('button');
+    regenerateCoverage.type = 'button';
+    regenerateCoverage.className = 'daily-brief-coverage-regenerate';
+    regenerateCoverage.textContent = t('regenerate');
+    regenerateCoverage.disabled = true;
+    regenerateCoverage.addEventListener('click', () => {
+      coverageControl.open = false;
+      briefState.coverageMode = pendingCoverageHours;
+      generateDailyBrief(true);
+    });
+    menu.appendChild(regenerateCoverage);
+    coverageControl.appendChild(menu);
+    const resetPendingCoverage = () => {
+      pendingCoverageHours = brief.coverageHours;
+      for (const item of menu.querySelectorAll('.daily-brief-coverage-option')) {
+        item.classList.toggle(
+          'active',
+          Number(item.dataset.hours) === brief.coverageHours);
+      }
+      regenerateCoverage.disabled = true;
+    };
+    const closeCoverageMenu = (event) => {
+      if (!coverageControl.contains(event.target)) coverageControl.open = false;
+    };
+    coverageControl.addEventListener('toggle', () => {
+      if (coverageControl.open) {
+        window.setTimeout(() => document.addEventListener('click', closeCoverageMenu), 0);
+      } else {
+        document.removeEventListener('click', closeCoverageMenu);
+        resetPendingCoverage();
+      }
+    });
+    subtitle.appendChild(coverageControl);
+  } else {
+    const coverageText = document.createElement('span');
+    coverageText.textContent = tf('coveringHours', { hours: brief.coverageHours });
+    subtitle.appendChild(coverageText);
+  }
   const readTime = document.createElement('span');
   readTime.className = 'daily-brief-read-time';
   readTime.textContent = tf('readTime', {

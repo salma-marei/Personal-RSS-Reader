@@ -590,7 +590,6 @@ body {
   font-weight: 650;
 }
 .catch-me-up:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
-
 .search {
   display: flex;
   align-items: center;
@@ -834,6 +833,81 @@ html[dir="rtl"] .card-main.rtl-card .card-text { padding-left: 38px; }
   margin: 0;
   color: var(--muted);
   font-size: 0.82rem;
+}
+.daily-brief-coverage-control {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.daily-brief-coverage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  list-style: none;
+}
+.daily-brief-coverage::-webkit-details-marker { display: none; }
+.daily-brief-coverage:hover,
+.daily-brief-coverage:focus-visible { color: var(--text); }
+.daily-brief-coverage-chevron {
+  color: var(--muted);
+  font-size: 0.9em;
+  line-height: 1;
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+.daily-brief-coverage-control[open] .daily-brief-coverage-chevron { transform: rotate(180deg); }
+.daily-brief-coverage-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-start: 0;
+  z-index: 20;
+  min-width: 230px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+.daily-brief-coverage-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+.daily-brief-coverage-option:hover,
+.daily-brief-coverage-option:focus-visible { background: var(--accent-subtle); color: var(--text); }
+.daily-brief-coverage-option.active { color: var(--accent); font-weight: 700; }
+.daily-brief-coverage-count { color: var(--muted); font-size: 0.92em; font-weight: 500; }
+.daily-brief-coverage-regenerate {
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+.daily-brief-coverage-regenerate:hover { background: var(--gold-hover); }
+.daily-brief-coverage-regenerate:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 .daily-brief-header-details {
   display: flex;

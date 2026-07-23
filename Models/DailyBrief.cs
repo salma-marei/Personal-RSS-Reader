@@ -6,6 +6,7 @@ public sealed class DailyBriefRequest
     public DateTimeOffset DayEndUtc { get; set; }
     public string Language { get; set; } = "en";
     public bool Regenerate { get; set; }
+    public int CoverageHours { get; set; }
 }
 
 public sealed class DailyBrief
@@ -14,7 +15,15 @@ public sealed class DailyBrief
     public List<DailyBriefSection> Sections { get; set; } = [];
     public int ArticleCount { get; set; }
     public int FeedCount { get; set; }
+    public int CoverageHours { get; set; }
+    public List<DailyBriefCoverageOption> CoverageOptions { get; set; } = [];
     public DateTimeOffset GeneratedAt { get; set; }
+}
+
+public sealed class DailyBriefCoverageOption
+{
+    public int Hours { get; set; }
+    public int ArticleCount { get; set; }
 }
 
 public sealed class DailyBriefSection

@@ -675,6 +675,8 @@ app.MapPost("/daily-brief", async (
     CancellationToken ct) =>
 {
     var language = request.Language == "ar" ? "ar" : "en";
+    if (request.CoverageHours is not (0 or 6 or 12 or 24))
+        return Results.BadRequest(new { error = "Coverage must be automatic, 6, 12, or 24 hours." });
     var dayStartUtc = request.DayStartUtc.ToUniversalTime();
     var dayEndUtc = request.DayEndUtc.ToUniversalTime();
     var dayLength = dayEndUtc - dayStartUtc;
@@ -686,7 +688,13 @@ app.MapPost("/daily-brief", async (
 
     var now = DateTimeOffset.UtcNow;
     if (dayStartUtc < now.AddHours(-48) || dayEndUtc > now.AddHours(48))
-        return Results.BadRequest(new { error = "Only the current day can be summarized." });
+        return Results.BadRequest(new { error = "Only recent articles can be summarized." });
+
+    // Reuse a generated brief within the current UTC hour while allowing it to
+    // naturally refresh as the rolling article window moves forward.
+    var briefCacheStartUtc = new DateTimeOffset(
+        now.Year, now.Month, now.Day, now.Hour, 0, 0, TimeSpan.Zero);
+    var briefCacheEndUtc = briefCacheStartUtc.AddHours(1);
 
     var user = await userManager.GetUserAsync(httpContext.User);
     if (request.Regenerate && user is null)
@@ -706,10 +714,11 @@ app.MapPost("/daily-brief", async (
 
         cacheScope = $"user:{user.Id}:feeds:{string.Join(',', subscribedFeedIds.Order())}";
     }
+    cacheScope += $":coverage:{request.CoverageHours}";
 
     if (!request.Regenerate)
     {
-        var cachedBrief = briefCache.Get(dayStartUtc, dayEndUtc, language, cacheScope);
+        var cachedBrief = briefCache.Get(briefCacheStartUtc, briefCacheEndUtc, language, cacheScope);
         if (cachedBrief is not null)
         {
             ApplyRateLimitHeaders(httpContext.Response, rateLimitService.GetStatus(clientIp));
@@ -739,13 +748,16 @@ app.MapPost("/daily-brief", async (
     });
 
     var articlesFromFeeds = await Task.WhenAll(tasks);
-    var todaysArticles = articlesFromFeeds
-        .SelectMany(articles => articles)
-        .Where(article => article.PublishedAt >= dayStartUtc && article.PublishedAt < dayEndUtc)
-        .ToList();
+    var allArticles = articlesFromFeeds.SelectMany(articles => articles).ToList();
+    var briefNow = DateTimeOffset.UtcNow;
+    var briefSelection = RecentBriefArticleSelector.Select(
+        allArticles,
+        briefNow,
+        request.CoverageHours == 0 ? null : request.CoverageHours);
+    var todaysArticles = briefSelection.Articles;
 
     if (todaysArticles.Count == 0)
-        return Results.NotFound(new { error = "No articles were published today." });
+        return Results.NotFound(new { error = "No articles were published in the last 24 hours." });
 
     DailyBriefLimitResult? acquiredLimit = null;
     if (request.Regenerate)
@@ -763,7 +775,7 @@ app.MapPost("/daily-brief", async (
         // Recheck the cache after entering the generation lock so it can reuse that result.
         if (!request.Regenerate)
         {
-            var cachedBrief = briefCache.Get(dayStartUtc, dayEndUtc, language, cacheScope);
+            var cachedBrief = briefCache.Get(briefCacheStartUtc, briefCacheEndUtc, language, cacheScope);
             if (cachedBrief is not null)
             {
                 ApplyRateLimitHeaders(httpContext.Response, rateLimitService.GetStatus(clientIp));
@@ -779,7 +791,17 @@ app.MapPost("/daily-brief", async (
         try
         {
             var brief = await briefService.GenerateAsync(todaysArticles, language, ct);
-            briefCache.Set(dayStartUtc, dayEndUtc, language, brief, cacheScope);
+            brief.CoverageHours = briefSelection.CoverageHours;
+            brief.CoverageOptions = new[] { 6, 12, 24 }
+                .Select(hours => new DailyBriefCoverageOption
+                {
+                    Hours = hours,
+                    ArticleCount = allArticles.Count(article =>
+                        article.PublishedAt >= briefNow.AddHours(-hours) &&
+                        article.PublishedAt <= briefNow)
+                })
+                .ToList();
+            briefCache.Set(briefCacheStartUtc, briefCacheEndUtc, language, brief, cacheScope);
             ApplyRateLimitHeaders(httpContext.Response, acquiredLimit!);
             return Results.Ok(brief);
         }
@@ -792,7 +814,7 @@ app.MapPost("/daily-brief", async (
         {
             logger.LogError(ex, "Daily brief generation failed.");
             return Results.Json(
-                new { error = "The AI Daily Brief could not be generated. Please try again." },
+                new { error = "The AI News Brief could not be generated. Please try again." },
                 statusCode: StatusCodes.Status502BadGateway);
         }
         catch (HttpRequestException ex)
@@ -869,8 +891,8 @@ static IResult RateLimitExceeded(HttpResponse response, DailyBriefLimitResult li
         DailyBriefLimitReason.DailyIpLimit =>
             "You have used all 5 brief regenerations for today.",
         DailyBriefLimitReason.GlobalDailyLimit =>
-            "The AI Daily Brief has reached its generation limit for today. Please try again tomorrow.",
-        _ => "Too many AI Daily Brief requests. Please try again later."
+            "The AI News Brief has reached its generation limit for today. Please try again tomorrow.",
+        _ => "Too many AI News Brief requests. Please try again later."
     };
 
     return Results.Json(new
